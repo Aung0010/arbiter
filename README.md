@@ -57,13 +57,18 @@ Instead of trusting a single model, reasoning becomes a **collective decision pr
 ## How It Works (Concept)
 
 User Prompt
+
 ↓
+
 Multiple LLMs generate responses
 ↓
+
 Structured debate rounds
 ↓
+
 Consensus voting / abstention
 ↓
+
 Final Answer + Logs
 
 ---
