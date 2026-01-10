@@ -61,12 +61,15 @@ User Prompt
 ↓
 
 Multiple LLMs generate responses
+
 ↓
 
 Structured debate rounds
+
 ↓
 
 Consensus voting / abstention
+
 ↓
 
 Final Answer + Logs
