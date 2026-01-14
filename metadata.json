@@ -1,0 +1,5 @@
+{
+  "name": "Arbiter - Multi-LLM Debate System",
+  "description": "A collaborative AI platform where multiple LLM agents debate, critique, and refine answers to provide a single, high-quality consensus response.",
+  "requestFramePermissions": []
+}
