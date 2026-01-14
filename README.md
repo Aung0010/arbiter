@@ -88,6 +88,9 @@ Smaller models amplify measurable improvements — making research gains more vi
 
 ---
 
+1. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key ( using one key only for the time being)
+2. Run the app:
+   `npm run dev`
 ## How to Run (Dev)
 
 ```bash
