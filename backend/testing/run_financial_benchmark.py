@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-import re
 import json
+import re
+import string
 import time
+from collections import Counter
 from pathlib import Path
 from typing import Optional
 
-import requests
 import pandas as pd
+import requests
 from tqdm import tqdm
-from datasets import load_dataset
-from sklearn.metrics import accuracy_score, f1_score, classification_report
 
 
 # ============================================================
@@ -23,56 +23,92 @@ MODELS = [
     "qwen2.5:14b",
 ]
 
-# 先小样本验证，确认没问题后改成 100 / 300 / None
+# 第一次建议先 30，跑通后再改成 100 / None
 MAX_SAMPLES: Optional[int] = 300
 
-# 单次请求最长等待时间（秒）
 REQUEST_TIMEOUT = 600
-
-# 请求失败时的最大重试次数
 MAX_RETRIES = 2
 
-# 输出目录
-OUTPUT_DIR = Path("benchmark_outputs_chat")
+OUTPUT_DIR = Path("financebench_outputs")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-# benchmark 配置
-DATASET_NAME = "takala/financial_phrasebank"
-DATASET_CONFIG = "sentences_allagree"
-
-LABELS = ["negative", "neutral", "positive"]
+# FinanceBench 开源 150 样本
+DATA_URL = (
+    "https://raw.githubusercontent.com/patronus-ai/financebench/main/data/"
+    "financebench_open_source.jsonl"
+)
 
 SYSTEM_MESSAGE = """
-You are a financial sentiment classifier.
+You are a financial question answering assistant.
 
-Your task is to classify a financial news sentence into exactly one of these labels:
-negative
-neutral
-positive
+You must answer the user's financial question using only the provided context.
 
 Rules:
-- Return exactly one word
-- Do not explain
-- Do not add punctuation
-- Do not output anything except one label
+- Return only the final answer
+- Be concise
+- Do not explain unless absolutely necessary
+- If the answer is not supported by the context, return exactly: insufficient information
+- Preserve units, dates, signs, and percentages if present
+- Do not use outside knowledge
 """.strip()
 
 
 # ============================================================
-# 工具函数
+# 文本评分工具
+# ============================================================
+def normalize_text(s: str) -> str:
+    s = str(s).lower().strip()
+    s = s.replace("\n", " ")
+    s = "".join(ch for ch in s if ch not in string.punctuation)
+    s = re.sub(r"\s+", " ", s)
+    return s.strip()
+
+
+def tokenize(s: str) -> list[str]:
+    return normalize_text(s).split()
+
+
+def exact_match_score(pred: str, gold: str) -> int:
+    return int(normalize_text(pred) == normalize_text(gold))
+
+
+def contains_gold_score(pred: str, gold: str) -> int:
+    p = normalize_text(pred)
+    g = normalize_text(gold)
+    if not p or not g:
+        return 0
+    return int(g in p or p in g)
+
+
+def token_f1_score(pred: str, gold: str) -> float:
+    pred_tokens = tokenize(pred)
+    gold_tokens = tokenize(gold)
+
+    if not pred_tokens and not gold_tokens:
+        return 1.0
+    if not pred_tokens or not gold_tokens:
+        return 0.0
+
+    common = Counter(pred_tokens) & Counter(gold_tokens)
+    num_same = sum(common.values())
+    if num_same == 0:
+        return 0.0
+
+    precision = num_same / len(pred_tokens)
+    recall = num_same / len(gold_tokens)
+    return 2 * precision * recall / (precision + recall)
+
+
+# ============================================================
+# Ollama 调用
 # ============================================================
 def call_ollama_chat(
     model: str,
-    sentence: str,
+    question: str,
+    context: str,
     timeout: int = REQUEST_TIMEOUT,
     retries: int = MAX_RETRIES,
 ) -> str:
-    """
-    调用 Ollama chat API。
-    对 qwen3.5 关键点：
-    - 使用 /api/chat
-    - 顶层加入 think=False
-    """
     payload = {
         "model": model,
         "stream": False,
@@ -86,15 +122,16 @@ def call_ollama_chat(
             {
                 "role": "user",
                 "content": (
-                    "Classify the sentiment of this financial sentence.\n\n"
-                    f"Sentence: {sentence}\n\n"
-                    "Return only one label: negative, neutral, or positive."
+                    "Answer the financial question using only the context below.\n\n"
+                    f"Question:\n{question}\n\n"
+                    f"Context:\n{context}\n\n"
+                    "Final answer:"
                 ),
             },
         ],
         "options": {
             "temperature": 0,
-            "num_predict": 64,
+            "num_predict": 96,
         },
     }
 
@@ -105,10 +142,8 @@ def call_ollama_chat(
             resp = requests.post(OLLAMA_CHAT_URL, json=payload, timeout=timeout)
             resp.raise_for_status()
             data = resp.json()
-
             msg = data.get("message", {})
             content = msg.get("content", "")
-
             return content.strip()
 
         except requests.exceptions.Timeout as e:
@@ -130,97 +165,79 @@ def call_ollama_chat(
     raise last_error
 
 
-def normalize_label(text: str) -> str:
-    """
-    归一化模型输出到:
-    negative / neutral / positive
-    """
-    if not text:
-        return "neutral"
-
-    text = text.strip().lower()
-
-    match = re.search(r"\b(negative|neutral|positive)\b", text)
-    if match:
-        return match.group(1)
-
-    if "neg" in text:
-        return "negative"
-    if "neu" in text:
-        return "neutral"
-    if "pos" in text:
-        return "positive"
-
-    return "neutral"
-
-
-def load_financial_phrasebank(max_samples: Optional[int] = None) -> pd.DataFrame:
-    """
-    加载 Financial PhraseBank 数据集
-    """
-    ds = load_dataset(DATASET_NAME, DATASET_CONFIG)["train"]
-
-    text_col = "sentence" if "sentence" in ds.column_names else "text"
-    label_col = "label"
-
-    label_feature = ds.features[label_col]
-    if hasattr(label_feature, "names") and label_feature.names:
-        id2label = {i: name.lower() for i, name in enumerate(label_feature.names)}
-    else:
-        id2label = {
-            0: "negative",
-            1: "neutral",
-            2: "positive",
-        }
+# ============================================================
+# 数据加载
+# ============================================================
+def load_financebench(max_samples: Optional[int] = None) -> pd.DataFrame:
+    resp = requests.get(DATA_URL, timeout=120)
+    resp.raise_for_status()
 
     rows = []
-    for item in ds:
+    for line in resp.text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+
+        item = json.loads(line)
+
+        evidence_list = item.get("evidence", [])
+        if evidence_list:
+            first_evidence = evidence_list[0]
+            context = (
+                first_evidence.get("evidence_text_full_page")
+                or first_evidence.get("evidence_text")
+                or ""
+            )
+            evidence_text = first_evidence.get("evidence_text", "")
+            evidence_page_num = first_evidence.get("evidence_page_num")
+        else:
+            context = ""
+            evidence_text = ""
+            evidence_page_num = None
+
         rows.append(
             {
-                "text": item[text_col],
-                "gold": id2label[int(item[label_col])],
+                "financebench_id": item.get("financebench_id", ""),
+                "company": item.get("company", ""),
+                "doc_name": item.get("doc_name", ""),
+                "question": item.get("question", ""),
+                "gold_answer": item.get("answer", ""),
+                "justification": item.get("justification", ""),
+                "question_type": item.get("question_type", ""),
+                "question_reasoning": item.get("question_reasoning", ""),
+                "context": context,
+                "evidence_text": evidence_text,
+                "evidence_page_num": evidence_page_num,
             }
         )
 
     df = pd.DataFrame(rows)
 
+    df = df[
+        (df["question"].fillna("").str.strip() != "")
+        & (df["gold_answer"].fillna("").str.strip() != "")
+        & (df["context"].fillna("").str.strip() != "")
+    ].reset_index(drop=True)
+
     if max_samples is not None and len(df) > max_samples:
-        sampled_parts = []
-        total_len = len(df)
-
-        for _, sub_df in df.groupby("gold"):
-            ratio = len(sub_df) / total_len
-            n = max(1, round(max_samples * ratio))
-            n = min(n, len(sub_df))
-            sampled_parts.append(sub_df.sample(n=n, random_state=42))
-
-        df = (
-            pd.concat(sampled_parts)
-            .sample(frac=1.0, random_state=42)
-            .reset_index(drop=True)
-        )
-
-        if len(df) > max_samples:
-            df = df.iloc[:max_samples].copy()
+        df = df.sample(n=max_samples, random_state=42).reset_index(drop=True)
 
     return df
 
 
+# ============================================================
+# 预热 / 评测
+# ============================================================
 def warmup_model(model_name: str) -> None:
-    """
-    正式 benchmark 前预热
-    """
     print("=" * 70)
     print(f"Warming up model: {model_name}")
     print("=" * 70)
 
+    q = "What was the company's net income?"
+    c = "The company reported net income of $12 million for the fiscal year."
+
     start = time.perf_counter()
-    raw = call_ollama_chat(
-        model=model_name,
-        sentence="The company reported stable quarterly earnings.",
-        timeout=REQUEST_TIMEOUT,
-        retries=MAX_RETRIES,
-    )
+    raw = call_ollama_chat(model=model_name, question=q, context=c)
     elapsed = time.perf_counter() - start
 
     print(f"Warmup response: {raw!r}")
@@ -229,14 +246,13 @@ def warmup_model(model_name: str) -> None:
 
 
 def evaluate_model(model_name: str, df: pd.DataFrame) -> dict:
-    """
-    对单个模型做评测
-    """
     predictions = []
-    raw_outputs = []
     latencies = []
     error_flags = []
     error_messages = []
+    exact_matches = []
+    contains_gold = []
+    token_f1s = []
 
     progress_bar = tqdm(
         df.itertuples(index=False),
@@ -245,111 +261,97 @@ def evaluate_model(model_name: str, df: pd.DataFrame) -> dict:
     )
 
     for row in progress_bar:
-        sentence = row.text
-        gold = row.gold
-
         try:
             start = time.perf_counter()
-            raw = call_ollama_chat(
+            pred = call_ollama_chat(
                 model=model_name,
-                sentence=sentence,
-                timeout=REQUEST_TIMEOUT,
-                retries=MAX_RETRIES,
+                question=row.question,
+                context=row.context,
             )
             elapsed = time.perf_counter() - start
 
-            pred = normalize_label(raw)
+            em = exact_match_score(pred, row.gold_answer)
+            cg = contains_gold_score(pred, row.gold_answer)
+            f1 = token_f1_score(pred, row.gold_answer)
 
             predictions.append(pred)
-            raw_outputs.append(raw)
             latencies.append(elapsed)
             error_flags.append(False)
             error_messages.append("")
+            exact_matches.append(em)
+            contains_gold.append(cg)
+            token_f1s.append(f1)
 
             progress_bar.set_postfix(
                 {
-                    "last_raw": raw[:20] if raw else "EMPTY",
-                    "last_pred": pred,
+                    "last_f1": f"{f1:.2f}",
                     "latency_s": f"{elapsed:.1f}",
                 }
             )
 
         except Exception as e:
-            # 单条失败时不中断整个 benchmark
-            predictions.append("neutral")
-            raw_outputs.append("")
+            predictions.append("")
             latencies.append(float("nan"))
             error_flags.append(True)
             error_messages.append(str(e))
+            exact_matches.append(0)
+            contains_gold.append(0)
+            token_f1s.append(0.0)
 
             progress_bar.set_postfix(
                 {
-                    "last_raw": "ERROR",
-                    "last_pred": "neutral",
+                    "last_f1": "ERR",
                     "latency_s": "NA",
                 }
             )
 
             print(f"\n[ERROR] model={model_name}")
-            print(f"Sentence: {sentence}")
-            print(f"Gold: {gold}")
+            print(f"Question: {row.question}")
+            print(f"Gold: {row.gold_answer}")
             print(f"Error: {e}\n")
 
     out_df = df.copy()
     out_df["model"] = model_name
     out_df["prediction"] = predictions
-    out_df["raw_output"] = raw_outputs
     out_df["latency_sec"] = latencies
     out_df["error"] = error_flags
     out_df["error_message"] = error_messages
-    out_df["correct"] = out_df["gold"] == out_df["prediction"]
+    out_df["exact_match"] = exact_matches
+    out_df["contains_gold"] = contains_gold
+    out_df["token_f1"] = token_f1s
+
+    safe_name = model_name.replace(":", "_")
+    out_csv = OUTPUT_DIR / f"{safe_name}_predictions.csv"
+    out_df.to_csv(out_csv, index=False, encoding="utf-8-sig")
 
     valid_latency = out_df["latency_sec"].dropna()
     avg_latency = valid_latency.mean() if len(valid_latency) > 0 else float("nan")
 
-    acc = accuracy_score(out_df["gold"], out_df["prediction"])
-    macro_f1 = f1_score(out_df["gold"], out_df["prediction"], average="macro")
-
-    report = classification_report(
-        out_df["gold"],
-        out_df["prediction"],
-        labels=LABELS,
-        digits=4,
-        output_dict=True,
-        zero_division=0,
-    )
-
-    safe_name = model_name.replace(":", "_")
-    out_csv = OUTPUT_DIR / f"{safe_name}_predictions.csv"
-    out_json = OUTPUT_DIR / f"{safe_name}_report.json"
-
-    out_df.to_csv(out_csv, index=False, encoding="utf-8-sig")
-    with open(out_json, "w", encoding="utf-8") as f:
-        json.dump(report, f, ensure_ascii=False, indent=2)
-
-    error_count = int(out_df["error"].sum())
-    empty_output_count = int((out_df["raw_output"].fillna("") == "").sum())
-
-    return {
+    summary = {
         "model": model_name,
         "samples": len(out_df),
-        "accuracy": acc,
-        "macro_f1": macro_f1,
+        "exact_match_rate": out_df["exact_match"].mean(),
+        "contains_gold_rate": out_df["contains_gold"].mean(),
+        "avg_token_f1": out_df["token_f1"].mean(),
         "avg_latency_sec": avg_latency,
-        "error_count": error_count,
-        "empty_output_count": empty_output_count,
+        "error_count": int(out_df["error"].sum()),
         "output_csv": str(out_csv),
-        "output_report": str(out_json),
     }
+
+    return summary
 
 
 def print_dataset_info(df: pd.DataFrame) -> None:
     print("=" * 70)
-    print("Loading Financial PhraseBank benchmark...")
+    print("Loading FinanceBench open-source benchmark...")
     print("=" * 70)
     print(f"Loaded samples: {len(df)}")
-    print("\nLabel distribution:")
-    print(df["gold"].value_counts())
+    if len(df) > 0:
+        print("\nSample question:")
+        print(df.iloc[0]["question"])
+        print(f"Gold answer: {df.iloc[0]['gold_answer']}")
+        print(f"Company: {df.iloc[0]['company']}")
+        print(f"Doc: {df.iloc[0]['doc_name']}")
     print()
 
 
@@ -363,14 +365,12 @@ def print_final_summary(summary_df: pd.DataFrame, summary_path: Path) -> None:
 
 
 def main() -> None:
-    df = load_financial_phrasebank(MAX_SAMPLES)
+    df = load_financebench(MAX_SAMPLES)
     print_dataset_info(df)
 
-    # 预热
     for model in MODELS:
         warmup_model(model)
 
-    # 正式评测
     results = []
     for model in MODELS:
         print("=" * 70)
@@ -380,7 +380,7 @@ def main() -> None:
         results.append(result)
 
     summary_df = pd.DataFrame(results).sort_values(
-        by=["macro_f1", "accuracy"],
+        by=["avg_token_f1", "contains_gold_rate", "exact_match_rate"],
         ascending=False,
     )
 
