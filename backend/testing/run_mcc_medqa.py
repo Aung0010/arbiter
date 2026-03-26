@@ -2,7 +2,7 @@
 MCC (Model Confrontation & Collaboration) 框架 - MedQA 多模型辩论
 
 基于 MCC-code/MCC_MedQA.py 的架构，将 GPT/Qwen/DeepSeek API 调用
-替换为本地 Ollama 平台上的三个 3B 模型。
+替换为 Ollama 平台上的三个 cloud 模型（通过本地 Ollama 代理调用）。
 
 使用 BenchBase 规范化的 MedQA 数据集：Layered-Labs/benchbase-medqa
 """
@@ -31,13 +31,13 @@ from sklearn.metrics import accuracy_score
 # 配置区
 # =========================
 
-# 本地 Ollama 服务地址
+# Ollama 服务地址（cloud 模型同样经此端点调用，需已 ollama pull 并登录）
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
 
-# 三个 3B 模型（来自 ollama list，可替换为其他 3B 级别模型）
-MODEL_A = "qwen2.5:3b"   # 对应原框架中的 "GPT" 角色
-MODEL_B = "llama3.2:3b"  # 对应原框架中的 "Qwen" 角色
-MODEL_C = "gemma2:2b"    # 对应原框架中的 "DeepSeek" 角色
+# 三个 Ollama cloud 模型（名称与 `ollama list` 一致；顺序：A/B/C 对应列表前三项）
+MODEL_A = "gemma3:12b-cloud"        # 对应原框架中的 "GPT" 角色
+MODEL_B = "ministral-3:14b-cloud"   # 对应原框架中的 "Qwen" 角色
+MODEL_C = "qwen3.5:cloud"           # 对应原框架中的 "DeepSeek" 角色
 
 # BenchBase MedQA 数据集
 DATASET_NAME = "Layered-Labs/benchbase-medqa"
@@ -46,8 +46,8 @@ DATASET_SPLIT = "test"
 # 最大辩论轮数
 MAX_DEBATE_ROUNDS = 3
 
-# API 超时（秒）
-OLLAMA_TIMEOUT = 300
+# API 超时（秒，cloud 推理可能较慢）
+OLLAMA_TIMEOUT = 600
 
 
 # =========================
@@ -185,7 +185,7 @@ def extract_model_choice(answer_text: str, choices_text: str, key_to_num: Dict[s
 # =========================
 
 def get_initial_prompt(question: str, choices: str, model_role: str) -> str:
-    """初始作答 prompt（简化版，适配 3B 模型）"""
+    """初始作答 prompt（精简版，便于多轮辩论）"""
     return f"""You are a medical expert (as {model_role}) answering a USMLE-style multiple-choice question.
 
 [Medical Case / Question]
@@ -410,6 +410,7 @@ def conduct_debate(
     if check_consensus([init_a, init_b, init_c]):
         final = next((c for c in [init_a, init_b, init_c] if c is not None), None)
         return {
+            "failed": False,
             "consensus": True,
             "final_choice": final,
             "initial_choices": {"a": init_a, "b": init_b, "c": init_c},
@@ -434,6 +435,7 @@ def conduct_debate(
         if check_consensus([a_res["choice"], cur_b["choice"], cur_c["choice"]]):
             final = next((c for c in [a_res["choice"], cur_b["choice"], cur_c["choice"]] if c is not None), None)
             return {
+                "failed": False,
                 "consensus": True,
                 "final_choice": final,
                 "initial_choices": {"a": init_a, "b": init_b, "c": init_c},
@@ -456,6 +458,7 @@ def conduct_debate(
         if check_consensus([cur_a["choice"], b_res["choice"], cur_c["choice"]]):
             final = next((c for c in [cur_a["choice"], b_res["choice"], cur_c["choice"]] if c is not None), None)
             return {
+                "failed": False,
                 "consensus": True,
                 "final_choice": final,
                 "initial_choices": {"a": init_a, "b": init_b, "c": init_c},
@@ -478,6 +481,7 @@ def conduct_debate(
         if check_consensus([cur_a["choice"], cur_b["choice"], c_res["choice"]]):
             final = next((c for c in [cur_a["choice"], cur_b["choice"], c_res["choice"]] if c is not None), None)
             return {
+                "failed": False,
                 "consensus": True,
                 "final_choice": final,
                 "initial_choices": {"a": init_a, "b": init_b, "c": init_c},
@@ -492,21 +496,45 @@ def conduct_debate(
         cur_c = c_res
         history.append({"round": r, "a": cur_a, "b": cur_b, "c": cur_c})
 
-    # 未达成共识：多数投票
+    # 未达成共识：多数投票；平票或无人有效票 → failed，仍返回完整 debate 记录
     fa, fb, fc = cur_a["choice"], cur_b["choice"], cur_c["choice"]
     votes = [c for c in [fa, fb, fc] if c is not None]
+    stance = {
+        "a_changed": init_a != fa, "b_changed": init_b != fb, "c_changed": init_c != fc,
+        "a_changed_from_correct": bool(correct_num and init_a == correct_num and fa != correct_num),
+        "b_changed_from_correct": bool(correct_num and init_b == correct_num and fb != correct_num),
+        "c_changed_from_correct": bool(correct_num and init_c == correct_num and fc != correct_num),
+    }
     if not votes:
-        return None
+        return {
+            "failed": True,
+            "failure_reason": "no_valid_votes",
+            "consensus": False,
+            "final_choice": None,
+            "initial_choices": {"a": init_a, "b": init_b, "c": init_c},
+            "debate_history": history,
+            "stance_changes": stance,
+            "correct_choice": correct_num,
+            "vote_distribution": {},
+        }
     cnt = Counter(votes)
     most = cnt.most_common(2)
-    if not most:
-        return None
     final_choice, count = most[0]
-    # 若最高票数相同 (tie)，按原框架返回 None
     if len(most) > 1 and most[1][1] == count:
-        return None
+        return {
+            "failed": True,
+            "failure_reason": "vote_tie",
+            "consensus": False,
+            "final_choice": None,
+            "initial_choices": {"a": init_a, "b": init_b, "c": init_c},
+            "debate_history": history,
+            "stance_changes": stance,
+            "correct_choice": correct_num,
+            "vote_distribution": dict(cnt),
+        }
 
     return {
+        "failed": False,
         "consensus": False,
         "final_choice": final_choice,
         "initial_choices": {"a": init_a, "b": init_b, "c": init_c},
@@ -522,6 +550,47 @@ def conduct_debate(
 
 
 # =========================
+# 结果目录与落盘
+# =========================
+
+SUBDIR_INITIAL_CONSENSUS = "initial_consensus"
+SUBDIR_AFTER_DEBATE = "after_debate"
+SUBDIR_FAILED = "failed"
+SUBDIR_ERRORS = "errors"
+
+
+def is_initial_consensus(debate_result: Dict[str, Any]) -> bool:
+    """首轮作答后三模型即一致（仅 round 0，且最终标记为达成共识）。"""
+    if not debate_result.get("consensus"):
+        return False
+    history = debate_result.get("debate_history") or []
+    return len(history) == 1
+
+
+def case_output_subdir(debate_result: Dict[str, Any]) -> str:
+    """根据首轮共识 / 辩论有果 / 平票或无法投票 选择子目录。"""
+    if debate_result.get("failed"):
+        return SUBDIR_FAILED
+    if is_initial_consensus(debate_result):
+        return SUBDIR_INITIAL_CONSENSUS
+    return SUBDIR_AFTER_DEBATE
+
+
+def build_case_json_payload(r: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    initial_consensus：精简 JSON，不含 debate_result。
+    after_debate / failed：含完整 debate_result（failed 含 vote_distribution、failure_reason）。
+    """
+    dr = r["debate_result"]
+    base = {k: v for k, v in r.items() if k != "debate_result"}
+    if is_initial_consensus(dr):
+        return base
+    out = dict(base)
+    out["debate_result"] = dr
+    return out
+
+
+# =========================
 # 主流程
 # =========================
 
@@ -529,8 +598,9 @@ def process_single_case(
     item: Dict,
     idx: int,
     max_rounds: int,
-) -> Optional[Dict[str, Any]]:
-    """处理单题"""
+) -> Dict[str, Any]:
+    """处理单题。成功时含 debate_result；异常或 conduct_debate 无返回时含 error=True。"""
+    t0 = time.perf_counter()
     question = item["question"]
     options = item["options"]
     answer = item["answer"]
@@ -545,16 +615,41 @@ def process_single_case(
         result = conduct_debate(question, choices_str, key_to_num, correct_num, max_rounds)
     except Exception as e:
         traceback.print_exc()
-        result = None
+        elapsed = time.perf_counter() - t0
+        return {
+            "error": True,
+            "idx": idx,
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "question": question,
+            "choices": choices_str,
+            "correct_answer": gold_key,
+            "record": {"elapsed_seconds": round(elapsed, 3)},
+        }
 
     if not result:
-        return None
+        elapsed = time.perf_counter() - t0
+        return {
+            "error": True,
+            "idx": idx,
+            "error_type": "NoResult",
+            "error_message": "conduct_debate returned None (unexpected)",
+            "question": question,
+            "choices": choices_str,
+            "correct_answer": gold_key,
+            "record": {"elapsed_seconds": round(elapsed, 3)},
+        }
 
-    final = result["final_choice"]
-    pred_letter = num_to_letter(final) if final else ""
-    is_correct = final == correct_num if correct_num else False
+    final = result.get("final_choice")
+    pred_letter = num_to_letter(final) if final is not None else ""
+    is_correct = (
+        final is not None
+        and correct_num is not None
+        and final == correct_num
+    )
+    elapsed = time.perf_counter() - t0
 
-    return {
+    out: Dict[str, Any] = {
         "idx": idx,
         "question": question,
         "choices": choices_str,
@@ -565,15 +660,26 @@ def process_single_case(
         "is_correct": is_correct,
         "consensus": result["consensus"],
         "debate_result": result,
+        "record": {
+            "elapsed_seconds": round(elapsed, 3),
+        },
     }
+    if result.get("failed"):
+        out["failure_reason"] = result.get("failure_reason")
+    return out
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="MCC 框架 - MedQA 三模型辩论 (Ollama 3B)")
+    parser = argparse.ArgumentParser(description="MCC 框架 - MedQA 三模型辩论 (Ollama cloud)")
     parser.add_argument("-n", "--num_cases", type=int, default=None, help="处理题目数量，默认全部")
     parser.add_argument("-s", "--start_idx", type=int, default=0, help="起始索引")
     parser.add_argument("--max_rounds", type=int, default=MAX_DEBATE_ROUNDS, help="最大辩论轮数")
-    parser.add_argument("--output_dir", type=str, default="mcc_debate_results", help="结果输出目录")
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="mcc_debate_results",
+        help="结果根目录；含 initial_consensus/、after_debate/、failed/、errors/ 子目录",
+    )
     args = parser.parse_args()
 
     ds = load_medqa(max_samples=args.num_cases)
@@ -582,10 +688,14 @@ def main() -> None:
     indices = list(range(args.start_idx, end_idx))
 
     os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(os.path.join(args.output_dir, SUBDIR_INITIAL_CONSENSUS), exist_ok=True)
+    os.makedirs(os.path.join(args.output_dir, SUBDIR_AFTER_DEBATE), exist_ok=True)
+    os.makedirs(os.path.join(args.output_dir, SUBDIR_FAILED), exist_ok=True)
+    os.makedirs(os.path.join(args.output_dir, SUBDIR_ERRORS), exist_ok=True)
     log_file = os.path.join(args.output_dir, f"log_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt")
 
     print("=" * 70)
-    print("MCC MedQA - 三模型辩论 (Ollama 3B)")
+    print("MCC MedQA - 三模型辩论 (Ollama cloud)")
     print("=" * 70)
     print(f"Model A: {MODEL_A}")
     print(f"Model B: {MODEL_B}")
@@ -595,32 +705,65 @@ def main() -> None:
     print("=" * 70)
 
     results = []
+    benchmark_items_attempted = len(indices)
     for i in tqdm(indices, desc="MCC Debate"):
         item = ds[i]
         r = process_single_case(item, i, args.max_rounds)
-        if r:
-            results.append(r)
-            case_file = os.path.join(args.output_dir, f"case_{i}.json")
-            with open(case_file, "w", encoding="utf-8") as f:
-                json.dump({k: v for k, v in r.items() if k != "debate_result"}, f, ensure_ascii=False, indent=2)
+        if r.get("error"):
+            err_file = os.path.join(args.output_dir, SUBDIR_ERRORS, f"case_{i}.json")
+            with open(err_file, "w", encoding="utf-8") as f:
+                json.dump(r, f, ensure_ascii=False, indent=2)
+            continue
+        results.append(r)
+        sub = case_output_subdir(r["debate_result"])
+        case_file = os.path.join(args.output_dir, sub, f"case_{i}.json")
+        with open(case_file, "w", encoding="utf-8") as f:
+            json.dump(build_case_json_payload(r), f, ensure_ascii=False, indent=2)
 
-    if not results:
-        print("No valid results.")
-        return
+    benchmark_items_completed = len(results)
+    benchmark_items_exception_aborted = benchmark_items_attempted - benchmark_items_completed
+    all_benchmark_items_completed = benchmark_items_exception_aborted == 0
 
-    gold = [num_to_letter(r["correct_num"]) if r["correct_num"] else "" for r in results]
-    pred = [r["pred_letter"] for r in results]
-    acc = accuracy_score(gold, pred)
+    if results:
+        gold = [num_to_letter(r["correct_num"]) if r["correct_num"] else "" for r in results]
+        pred = [r["pred_letter"] for r in results]
+        acc = float(accuracy_score(gold, pred))
+    else:
+        acc = None
     consensus_count = sum(1 for r in results if r["consensus"])
+    failed_count = sum(1 for r in results if r["debate_result"].get("failed"))
+    initial_consensus_count = sum(1 for r in results if is_initial_consensus(r["debate_result"]))
+    after_debate_count = len(results) - initial_consensus_count - failed_count
+    no_consensus_majority = sum(
+        1 for r in results if not r["consensus"] and not r["debate_result"].get("failed")
+    )
 
     summary = {
         "model_a": MODEL_A,
         "model_b": MODEL_B,
         "model_c": MODEL_C,
-        "total": len(results),
-        "correct": sum(r["is_correct"] for r in results),
+        "benchmark_items_attempted": benchmark_items_attempted,
+        "benchmark_items_completed": benchmark_items_completed,
+        "benchmark_items_exception_aborted": benchmark_items_exception_aborted,
+        "all_benchmark_items_completed": all_benchmark_items_completed,
+        "accuracy_note": (
+            "Reported accuracy uses only benchmark_items_completed rows; "
+            "exception-aborted items are excluded from both numerator and denominator."
+        ),
+        "total": benchmark_items_completed,
+        "correct": sum(r["is_correct"] for r in results) if results else 0,
         "accuracy": acc,
-        "consensus_count": consensus_count,
+        "consensus_count": consensus_count if results else 0,
+        "initial_consensus_count": initial_consensus_count if results else 0,
+        "after_debate_count": after_debate_count if results else 0,
+        "failed_count": failed_count if results else 0,
+        "no_consensus_majority_vote_count": no_consensus_majority if results else 0,
+        "output_subdirs": {
+            "initial_round_consensus": SUBDIR_INITIAL_CONSENSUS,
+            "debated_or_no_consensus": SUBDIR_AFTER_DEBATE,
+            "vote_tie_or_no_valid_votes": SUBDIR_FAILED,
+            "conduct_debate_exception": SUBDIR_ERRORS,
+        },
     }
     summary_file = os.path.join(args.output_dir, "summary.json")
     with open(summary_file, "w", encoding="utf-8") as f:
@@ -629,10 +772,20 @@ def main() -> None:
     print("\n" + "=" * 70)
     print("MCC 辩论统计")
     print("=" * 70)
-    print(f"总题数: {len(results)}")
-    print(f"正确数: {sum(r['is_correct'] for r in results)}")
-    print(f"准确率: {acc:.4%}")
-    print(f"达成共识: {consensus_count} ({consensus_count/len(results):.2%})")
+    print(f"计划评测题数: {benchmark_items_attempted}")
+    print(f"成功跑完题数: {benchmark_items_completed}")
+    print(f"异常中断题数 (→ {SUBDIR_ERRORS}/): {benchmark_items_exception_aborted}")
+    print(f"全部题目均成功跑完 (报告准确率才有整体意义): {all_benchmark_items_completed}")
+    if results:
+        print(f"正确数 (仅成功完成): {sum(r['is_correct'] for r in results)}")
+        print(f"准确率 (分母=成功完成题数): {acc:.4%}")
+        print(f"达成共识: {consensus_count} ({consensus_count/len(results):.2%})")
+        print(f"首轮即共识 (→ {SUBDIR_INITIAL_CONSENSUS}/): {initial_consensus_count}")
+        print(f"经辩论且多数票有结果 (→ {SUBDIR_AFTER_DEBATE}/): {after_debate_count}")
+        print(f"其中最终未全体一致、靠多数票: {no_consensus_majority}")
+        print(f"平票或无人有效票 (→ {SUBDIR_FAILED}/): {failed_count}")
+    else:
+        print("无成功完成的题目，未计算准确率。")
     print(f"汇总已保存: {summary_file}")
     print("=" * 70)
 
