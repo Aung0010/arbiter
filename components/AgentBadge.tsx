@@ -14,9 +14,9 @@ const AgentBadge: React.FC<AgentBadgeProps> = ({ role, size = 'md' }) => {
   };
 
   const text = {
-    [AgentRole.ANALYST]: "Analyst (Logic)",
-    [AgentRole.CREATIVE]: "Creative (Context)",
-    [AgentRole.SKEPTIC]: "Skeptic (Safety)",
+    [AgentRole.ANALYST]: "Qwen2.4 ",
+    [AgentRole.CREATIVE]: "Gemma3 ",
+    [AgentRole.SKEPTIC]: "Ministral3 ",
   };
 
   const icons = {

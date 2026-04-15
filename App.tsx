@@ -233,7 +233,7 @@ const App: React.FC = () => {
               </button>
             </form>
             <div className="text-center mt-2">
-                 <p className="text-xs text-slate-400">Powered by Claude, GPT, and Gemini for best Results.</p>
+                 <p className="text-xs text-slate-400">Powered by Qwen2.4, Gemma3, and Ministral3 .</p>
             </div>
           </div>
         </div>

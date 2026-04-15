@@ -1,7 +1,7 @@
 export enum AgentRole {
-  ANALYST = 'Analyst', // Logic/Math focused (Claude)
-  CREATIVE = 'Creative', // Context/Nuance focused (GPT)
-  SKEPTIC = 'Skeptic'    // Critical/Safety focused (Gemini)
+  ANALYST = 'Qwen2.4', // Logic/Math focused (Claude)
+  CREATIVE = 'Gemma3', // Context/Nuance focused (GPT)
+  SKEPTIC = 'Ministral3'    // Critical/Safety focused (Gemini)
 }
 
 export interface AgentResponse {
