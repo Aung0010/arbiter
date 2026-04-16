@@ -8,15 +8,15 @@ interface AgentBadgeProps {
 
 const AgentBadge: React.FC<AgentBadgeProps> = ({ role, size = 'md' }) => {
   const styles = {
-    [AgentRole.ANALYST]: "bg-blue-100 text-blue-800 border-blue-200",
-    [AgentRole.CREATIVE]: "bg-purple-100 text-purple-800 border-purple-200",
-    [AgentRole.SKEPTIC]: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    [AgentRole.ANALYST]: "bg-layer-white text-slate-custom border-base-divider border-l-2 border-l-brand-azure",
+    [AgentRole.CREATIVE]: "bg-layer-white text-slate-custom border-base-divider border-l-2 border-l-brand-azure",
+    [AgentRole.SKEPTIC]: "bg-layer-white text-slate-custom border-base-divider border-l-2 border-l-brand-azure",
   };
 
   const text = {
-    [AgentRole.ANALYST]: "Qwen2.4 ",
-    [AgentRole.CREATIVE]: "Gemma3 ",
-    [AgentRole.SKEPTIC]: "Ministral3 ",
+    [AgentRole.ANALYST]: "Qwen 3",
+    [AgentRole.CREATIVE]: "Gemma 3",
+    [AgentRole.SKEPTIC]: "Ministral 3",
   };
 
   const icons = {
@@ -37,12 +37,12 @@ const AgentBadge: React.FC<AgentBadgeProps> = ({ role, size = 'md' }) => {
     ),
   };
 
-  const sizeClasses = size === 'sm' ? "text-xs px-2 py-0.5" : "text-sm px-2.5 py-1";
+  const sizeClasses = size === 'sm' ? "text-xs px-2 py-1" : "text-sm px-2.5 py-1.5";
 
   return (
-    <span className={`inline-flex items-center font-medium rounded-full border ${styles[role]} ${sizeClasses}`}>
+    <span className={`inline-flex items-center font-medium rounded shadow-sm border ${styles[role]} ${sizeClasses}`}>
       {icons[role]}
-      {text[role]}
+      <span className="ml-1 tracking-tight">{text[role]}</span>
     </span>
   );
 };

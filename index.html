@@ -2,15 +2,100 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Arbiter | Multi-LLM Orchestration</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: { 
+                navy: 'rgb(var(--c-brand-navy))', 
+                azure: 'rgb(var(--c-brand-azure))' 
+              },
+              base: { 
+                DEFAULT: 'rgb(var(--c-base-default))', 
+                panel: 'rgb(var(--c-base-panel))', 
+                divider: 'rgb(var(--c-base-divider))' 
+              },
+              slate: { 
+                custom: 'rgb(var(--c-slate-custom))' 
+              },
+              signal: { 
+                green: 'rgb(var(--c-signal-green))', 
+                amber: 'rgb(var(--c-signal-amber))', 
+                red: 'rgb(var(--c-signal-red))' 
+              },
+              layer: {
+                white: 'rgb(var(--c-layer-white))'
+              },
+              core: {
+                inverse: 'rgb(var(--c-text-inverse))'
+              }
+            },
+            fontFamily: { sans: ['Inter', 'sans-serif'] },
+            boxShadow: { 
+                sm: '0 1px 2px 0 rgba(0, 0, 0, var(--shadow-opacity-sm))', 
+                default: '0 4px 8px -2px rgba(0, 0, 0, var(--shadow-opacity-default))' 
+            }
+          }
+        }
+      }
+    </script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      
+      :root {
+        --c-brand-navy: 11, 31, 51; /* #0B1F33 */
+        --c-brand-azure: 60, 126, 179; /* #3C7EB3 */
+        
+        --c-base-default: 245, 246, 248; /* #F5F6F8 */
+        --c-base-panel: 224, 227, 232; /* #E0E3E8 */
+        --c-base-divider: 208, 213, 221; /* #D0D5DD */
+        
+        --c-layer-white: 255, 255, 255; /* #FFFFFF */
+        
+        --c-slate-custom: 75, 85, 99; /* #4B5563 */
+        
+        --c-signal-green: 26, 157, 104; /* #1A9D68 */
+        --c-signal-amber: 217, 138, 27; /* #D98A1B */
+        --c-signal-red: 196, 63, 74; /* #C43F4A */
+        
+        --c-text-inverse: 255, 255, 255; /* White for inverse text */
+        
+        --shadow-opacity-sm: 0.05;
+        --shadow-opacity-default: 0.05;
+      }
+
+      html.dark {
+        --c-brand-navy: 226, 229, 233; /* #E2E5E9 */
+        --c-brand-azure: 74, 144, 226; /* #4A90E2 */
+        
+        --c-base-default: 14, 17, 22; /* #0E1116 */
+        --c-base-panel: 30, 35, 43; /* #1E232B */
+        --c-base-divider: 42, 48, 56; /* #2A3038 */
+        
+        --c-layer-white: 22, 25, 32; /* #161920 */
+        
+        --c-slate-custom: 156, 163, 175; /* #9CA3AF */
+        
+        --c-signal-green: 34, 197, 94; 
+        --c-signal-amber: 245, 158, 11; 
+        --c-signal-red: 239, 68, 68;
+        
+        --c-text-inverse: 14, 17, 22; /* Dark for text on light headers/buttons */
+        
+        --shadow-opacity-sm: 0.4;
+        --shadow-opacity-default: 0.4;
+      }
+      
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #f8fafc;
+        background-color: rgb(var(--c-base-default));
+        color: rgb(var(--c-slate-custom));
       }
+      
       /* Custom scrollbar for cleanliness */
       ::-webkit-scrollbar {
         width: 8px;
@@ -19,13 +104,22 @@
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
+        background: rgb(var(--c-base-divider));
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
+        background: rgb(var(--c-slate-custom));
       }
     </style>
+    
+    <!-- Initialize theme immediately to prevent flash -->
+    <script>
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
   <script type="importmap">
 {
   "imports": {

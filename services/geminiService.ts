@@ -49,3 +49,38 @@ export const generateSummary = async (inputs: string[]): Promise<string> => {
     return "Consolidating perspectives...";
   }
 };
+
+export const checkConsensus = async (inputs: string[]): Promise<{ isConsensus: boolean; answer: string; reasoning: string }> => {
+  if (!ai) return { isConsensus: false, answer: "", reasoning: "" };
+  
+  const prompt = `
+    Analyze the following perspectives from AI agents. Determine if they have reached a consensus/agreement that resolves the original query satisfactorily without major conflicts.
+    Format your EXACT response as:
+    CONSENSUS: [YES or NO]
+    REASONING: [1-sentence explanation]
+    ANSWER: [If YES, provide the unified answer formatted in clean markdown. Если NO, summarize the remaining disagreement.]
+    
+    Perspectives:
+    ${inputs.join('\n---\n')}
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+    });
+    const text = response.text || "";
+    
+    const isConsensusMatch = text.match(/CONSENSUS:\s*(YES|NO)/i);
+    const reasoningMatch = text.match(/REASONING:\s*(.*?)(?=\nANSWER:|$)/is);
+    const answerMatch = text.match(/ANSWER:\s*(.*)/is);
+
+    const isConsensus = isConsensusMatch ? isConsensusMatch[1].toUpperCase() === 'YES' : false;
+    const reasoning = reasoningMatch ? reasoningMatch[1].trim() : "Unable to determine reasoning.";
+    const answer = answerMatch ? answerMatch[1].trim() : text;
+
+    return { isConsensus, answer, reasoning };
+  } catch (e) {
+    return { isConsensus: false, answer: "Error checking consensus", reasoning: "Error" };
+  }
+};
