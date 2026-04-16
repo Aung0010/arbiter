@@ -1,5 +1,5 @@
 export enum AgentRole {
-  ANALYST = 'Qwen2.4', // Logic/Math focused (Claude)
+  ANALYST = 'Qwen2.5', // Logic/Math focused (Claude)
   CREATIVE = 'Gemma3', // Context/Nuance focused (GPT)
   SKEPTIC = 'Ministral3'    // Critical/Safety focused (Gemini)
 }
