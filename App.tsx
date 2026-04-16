@@ -236,7 +236,7 @@ const App: React.FC = () => {
               </button>
             </form>
             <div className="text-center mt-3">
-                 <p className="text-xs text-slate-custom">Powered by Qwen2.4, Gemma3, and Ministral3.</p>
+                 <p className="text-xs text-slate-custom">Powered by Qwen2.5, Gemma3, and Ministral3.</p>
             </div>
           </div>
         </div>
