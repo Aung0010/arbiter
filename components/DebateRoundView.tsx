@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { DebateRound, AgentRole, AgentResponse } from '../types';
 import AgentBadge from './AgentBadge';
 import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 interface DebateRoundViewProps {
   round: DebateRound;
@@ -60,7 +62,7 @@ const DebateRoundView: React.FC<DebateRoundViewProps> = ({ round, isLatest }) =>
                   <AgentBadge role={response.agentId} size="sm" />
                 </div>
                 <div className="text-sm text-slate-custom max-h-60 overflow-y-auto prose prose-sm prose-slate dark:prose-invert">
-                  <ReactMarkdown>{response.content}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{response.content}</ReactMarkdown>
                 </div>
               </div>
             ))}
@@ -82,7 +84,7 @@ const DebateRoundView: React.FC<DebateRoundViewProps> = ({ round, isLatest }) =>
                </button>
             </div>
             <div className="p-6 md:p-8 overflow-y-auto prose prose-slate prose-sm md:prose-base dark:prose-invert max-w-none text-slate-custom flex-1">
-               <ReactMarkdown>{selectedResponse.content}</ReactMarkdown>
+               <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{selectedResponse.content}</ReactMarkdown>
             </div>
           </div>
         </div>

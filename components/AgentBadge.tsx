@@ -14,7 +14,7 @@ const AgentBadge: React.FC<AgentBadgeProps> = ({ role, size = 'md' }) => {
   };
 
   const text = {
-    [AgentRole.ANALYST]: "Qwen 3",
+    [AgentRole.ANALYST]: "Qwen 2.5",
     [AgentRole.CREATIVE]: "Gemma 3",
     [AgentRole.SKEPTIC]: "Ministral 3",
   };

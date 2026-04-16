@@ -16,6 +16,16 @@ const App: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const scrollEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [prompt]);
 
   // Load history from local storage
   useEffect(() => {
@@ -34,7 +44,9 @@ const App: React.FC = () => {
 
   const scrollToBottom = () => {
       setTimeout(() => {
-        scrollEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (mainRef.current) {
+            mainRef.current.scrollTo({ top: mainRef.current.scrollHeight, behavior: 'smooth' });
+        }
       }, 100);
   };
 
@@ -126,8 +138,8 @@ const App: React.FC = () => {
         </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
-          <div className="max-w-4xl mx-auto">
+        <main ref={mainRef} className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+          <div className="max-w-4xl mx-auto flex flex-col min-h-full">
             {!activeSession ? (
               <div className="flex flex-col items-center justify-center h-[70vh] text-center space-y-6">
                 <div className="w-16 h-16 bg-layer-white border border-base-divider rounded shadow-sm flex items-center justify-center text-brand-navy mb-4">
@@ -210,18 +222,27 @@ const App: React.FC = () => {
         <div className="border-t border-base-divider bg-base-DEFAULT p-4 md:p-6">
           <div className="max-w-4xl mx-auto relative">
             <form onSubmit={handleSubmit} className="relative">
-              <input
-                type="text"
+              <textarea
+                ref={textareaRef}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (prompt.trim() && !isProcessing) {
+                      handleSubmit();
+                    }
+                  }
+                }}
+                rows={1}
                 placeholder={activeSessionId ? "Input secondary query parameters..." : "Initialize new protocol execution..."}
                 disabled={isProcessing}
-                className="w-full pl-4 pr-14 py-3 bg-layer-white border border-base-divider rounded text-slate-custom placeholder-slate-400 focus:outline-none focus:border-brand-azure shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                className="w-full pl-4 pr-14 py-3 bg-layer-white border border-base-divider rounded text-slate-custom placeholder-slate-400 focus:outline-none focus:border-brand-azure shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm resize-none max-h-64 overflow-y-auto"
               />
               <button
                 type="submit"
                 disabled={!prompt.trim() || isProcessing}
-                className="absolute right-1.5 top-1.5 bottom-1.5 px-3 bg-brand-navy hover:brightness-110 text-core-inverse rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="absolute right-2 bottom-2 h-9 w-9 bg-brand-navy hover:brightness-110 text-core-inverse rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center p-2"
               >
                 {isProcessing ? (
                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">

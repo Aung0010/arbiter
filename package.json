@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "@google/genai": "^1.35.0",
-    "react-markdown": "^10.1.0",
-    "uuid": "^13.0.0",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

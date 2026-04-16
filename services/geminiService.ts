@@ -1,6 +1,6 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
-const apiKey = process.env.API_KEY || '';
+const apiKey = process.env.API_KEY || 'AIzaSyD-B6fDc9zSMCJC8a-bdLVKFqjK4c0nBaA';
 
 // Initialize client only if key exists to avoid immediate crash, though functionality will be limited
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;

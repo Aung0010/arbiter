@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Arbiter | Multi-LLM Orchestration</title>
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script>
@@ -90,6 +91,14 @@
         --shadow-opacity-default: 0.4;
       }
       
+      html, body, #root {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
       body {
         font-family: 'Inter', sans-serif;
         background-color: rgb(var(--c-base-default));
@@ -124,7 +133,9 @@
 {
   "imports": {
     "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
-    "react-markdown": "https://esm.sh/react-markdown@^10.1.0",
+    "react-markdown": "https://esm.sh/react-markdown@^9.0.1",
+    "remark-math": "https://esm.sh/remark-math@6.0.0",
+    "rehype-katex": "https://esm.sh/rehype-katex@7.0.0",
     "uuid": "https://esm.sh/uuid@^13.0.0",
     "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
@@ -132,6 +143,7 @@
   }
 }
 </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
 <link rel="stylesheet" href="/index.css">
 </head>
   <body>
