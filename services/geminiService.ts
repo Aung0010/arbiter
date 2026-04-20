@@ -1,86 +1,150 @@
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+/**
+ * ollamaService.ts
+ * All communication with the Ollama/Express backend.
+ * No Google API keys — all inference runs locally via Ollama.
+ */
 
-const apiKey = process.env.API_KEY || 'AIzaSyD-B6fDc9zSMCJC8a-bdLVKFqjK4c0nBaA';
+// In development, Vite proxies /api → http://localhost:5050
+// In production, set VITE_BACKEND_URL in your .env
+const BACKEND = (import.meta as any).env?.VITE_BACKEND_URL ?? '';
 
-// Initialize client only if key exists to avoid immediate crash, though functionality will be limited
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+async function post<T>(path: string, body: Record<string, unknown>): Promise<T> {
+  const res = await fetch(`${BACKEND}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Backend ${path} returned ${res.status}: ${text.slice(0, 300)}`);
+  }
+  return res.json() as Promise<T>;
+}
 
-export const generateAgentResponse = async (
-  modelName: string,
-  systemInstruction: string,
-  prompt: string
-): Promise<string> => {
-  if (!ai) throw new Error("API Key is missing.");
-
+// ---------------------------------------------------------------------------
+// generateSummary — calls POST /api/chat/summarize
+// ---------------------------------------------------------------------------
+export const generateSummary = async (perspectives: string[]): Promise<string> => {
   try {
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        systemInstruction: systemInstruction,
-        temperature: 0.7, // Balance between creativity and determinism
-      },
-    });
-
-    return response.text || "No response generated.";
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "Error generating response. Please check API quota or connection.";
+    const data = await post<{ summary: string }>('/api/chat/summarize', { perspectives });
+    return data.summary ?? 'Consolidating perspectives...';
+  } catch (e) {
+    console.error('generateSummary error:', e);
+    return 'Consolidating perspectives...';
   }
 };
 
-export const generateSummary = async (inputs: string[]): Promise<string> => {
-  if (!ai) return "";
-  
-  const prompt = `
-    Analyze the following different perspectives on a topic and provide a brief 1-sentence summary of the current state of the debate.
-    
-    Perspectives:
-    ${inputs.join('\n---\n')}
-  `;
-
+// ---------------------------------------------------------------------------
+// checkConsensus — calls POST /api/chat/consensus
+// ---------------------------------------------------------------------------
+export const checkConsensus = async (
+  perspectives: string[]
+): Promise<{ isConsensus: boolean; answer: string; reasoning: string }> => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-    });
-    return response.text || "";
+    const data = await post<{ isConsensus: boolean; answer: string; reasoning: string }>(
+      '/api/chat/consensus',
+      { perspectives }
+    );
+    return {
+      isConsensus: Boolean(data.isConsensus),
+      answer: data.answer ?? '',
+      reasoning: data.reasoning ?? '',
+    };
   } catch (e) {
-    return "Consolidating perspectives...";
+    console.error('checkConsensus error:', e);
+    return { isConsensus: false, answer: '', reasoning: 'Error checking consensus.' };
   }
 };
 
-export const checkConsensus = async (inputs: string[]): Promise<{ isConsensus: boolean; answer: string; reasoning: string }> => {
-  if (!ai) return { isConsensus: false, answer: "", reasoning: "" };
-  
-  const prompt = `
-    Analyze the following perspectives from AI agents. Determine if they have reached a consensus/agreement that resolves the original query satisfactorily without major conflicts.
-    Format your EXACT response as:
-    CONSENSUS: [YES or NO]
-    REASONING: [1-sentence explanation]
-    ANSWER: [If YES, provide the unified answer formatted in clean markdown. Если NO, summarize the remaining disagreement.]
-    
-    Perspectives:
-    ${inputs.join('\n---\n')}
-  `;
+// ---------------------------------------------------------------------------
+// streamDebate — calls POST /api/chat/debate/stream (SSE)
+// Calls onRound for each completed round, then onFinal with the synthesis.
+// ---------------------------------------------------------------------------
+export interface StreamedRound {
+  round: number;
+  responses: Array<{ agentId: string; content: string; timestamp: number }>;
+}
 
+export interface StreamedFinal {
+  answer: string;
+  reasoning: string;
+  models: Record<string, string>;
+}
+
+export const streamDebate = async (
+  question: string,
+  onStatus: (msg: string, round: number) => void,
+  onRound: (round: StreamedRound) => void,
+  onFinal: (final: StreamedFinal) => void,
+  onError: (msg: string) => void,
+): Promise<void> => {
+  const res = await fetch(`${BACKEND}/api/chat/debate/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question }),
+  });
+
+  if (!res.ok || !res.body) {
+    const text = await res.text().catch(() => 'Unknown error');
+    onError(`Backend error ${res.status}: ${text.slice(0, 200)}`);
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    // SSE events are separated by double-newlines
+    const parts = buffer.split('\n\n');
+    buffer = parts.pop() ?? '';
+
+    for (const part of parts) {
+      const lines = part.split('\n');
+      let event = '';
+      let dataStr = '';
+
+      for (const line of lines) {
+        if (line.startsWith('event: ')) event = line.slice(7).trim();
+        if (line.startsWith('data: '))  dataStr = line.slice(6).trim();
+      }
+
+      if (!event || !dataStr) continue;
+
+      try {
+        const payload = JSON.parse(dataStr);
+        if (event === 'status') onStatus(payload.message, payload.round);
+        if (event === 'round')  onRound(payload);
+        if (event === 'final')  onFinal(payload);
+        if (event === 'error')  onError(payload.message);
+      } catch {
+        // ignore malformed SSE chunk
+      }
+    }
+  }
+};
+
+// ---------------------------------------------------------------------------
+// checkBackendHealth — convenience for startup validation
+// ---------------------------------------------------------------------------
+export const checkBackendHealth = async (): Promise<{
+  ok: boolean;
+  configured: Record<string, string>;
+  available: string[];
+}> => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-    });
-    const text = response.text || "";
-    
-    const isConsensusMatch = text.match(/CONSENSUS:\s*(YES|NO)/i);
-    const reasoningMatch = text.match(/REASONING:\s*(.*?)(?=\nANSWER:|$)/is);
-    const answerMatch = text.match(/ANSWER:\s*(.*)/is);
-
-    const isConsensus = isConsensusMatch ? isConsensusMatch[1].toUpperCase() === 'YES' : false;
-    const reasoning = reasoningMatch ? reasoningMatch[1].trim() : "Unable to determine reasoning.";
-    const answer = answerMatch ? answerMatch[1].trim() : text;
-
-    return { isConsensus, answer, reasoning };
-  } catch (e) {
-    return { isConsensus: false, answer: "Error checking consensus", reasoning: "Error" };
+    const res = await fetch(`${BACKEND}/api/health`);
+    const data = await res.json();
+    return {
+      ok: data.status === 'ok',
+      configured: data.configured ?? {},
+      available: data.ollama_available ?? [],
+    };
+  } catch {
+    return { ok: false, configured: {}, available: [] };
   }
 };

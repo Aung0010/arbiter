@@ -1,25 +1,27 @@
+// Agent role identifiers match the backend model slot keys (model_a / model_b / model_c).
+// Display names are handled in AgentBadge.tsx.
 export enum AgentRole {
-  ANALYST = 'Qwen2.5', // Logic/Math focused (Claude)
-  CREATIVE = 'Gemma3', // Context/Nuance focused (GPT)
-  SKEPTIC = 'Ministral3'    // Critical/Safety focused (Gemini)
+  MODEL_A = 'model_a',
+  MODEL_B = 'model_b',
+  MODEL_C = 'model_c',
 }
 
 export interface AgentResponse {
   agentId: AgentRole;
   content: string;
-  confidenceScore?: number; // 0-100
+  confidenceScore?: number; // 0–100
   timestamp: number;
 }
 
 export interface DebateRound {
   roundNumber: number;
   responses: AgentResponse[];
-  summary?: string; // Orchestrator's summary of this round
+  summary?: string;
 }
 
 export interface FinalConsensus {
   answer: string;
-  reasoning: string; // How the decision was reached (e.g., "Majority vote")
+  reasoning: string;
   participatingAgents: AgentRole[];
 }
 
@@ -30,6 +32,12 @@ export interface ChatSession {
   rounds: DebateRound[];
   finalResult: FinalConsensus | null;
   userPrompt: string;
+}
+
+export interface BackendHealth {
+  ok: boolean;
+  configured: Record<string, string>;  // { model_a: 'gemma3:12b', ... }
+  available: string[];                  // Ollama model names currently loaded
 }
 
 export interface Feedback {

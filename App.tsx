@@ -17,7 +17,6 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const mainRef = useRef<HTMLElement>(null);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -44,9 +43,7 @@ const App: React.FC = () => {
 
   const scrollToBottom = () => {
       setTimeout(() => {
-        if (mainRef.current) {
-            mainRef.current.scrollTo({ top: mainRef.current.scrollHeight, behavior: 'smooth' });
-        }
+        scrollEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
   };
 
@@ -138,8 +135,8 @@ const App: React.FC = () => {
         </div>
 
         {/* Main Content Area */}
-        <main ref={mainRef} className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
-          <div className="max-w-4xl mx-auto flex flex-col min-h-full">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+          <div className="max-w-4xl mx-auto">
             {!activeSession ? (
               <div className="flex flex-col items-center justify-center h-[70vh] text-center space-y-6">
                 <div className="w-16 h-16 bg-layer-white border border-base-divider rounded shadow-sm flex items-center justify-center text-brand-navy mb-4">

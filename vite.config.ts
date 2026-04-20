@@ -7,20 +7,28 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
+  const backendPort = env.BACKEND_PORT || '5050';
+
   return {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      proxy: {
+        // In dev, /api/* → http://localhost:5050/api/*
+        // This avoids CORS issues and removes any need for hardcoded backend URLs.
+        '/api': {
+          target: `http://localhost:${backendPort}`,
+          changeOrigin: true,
+        },
+      },
     },
     plugins: [react()],
-    define: {
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-    },
+    // No more Gemini API key needed
+    define: {},
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
-      }
-    }
+      },
+    },
   };
 });
