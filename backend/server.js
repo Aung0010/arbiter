@@ -6,9 +6,9 @@ const cors = require('cors');
 // ---------------------------------------------------------------------------
 const OLLAMA_URL    = process.env.OLLAMA_URL    || 'http://127.0.0.1:11434/api/generate';
 const OLLAMA_TAGS   = process.env.OLLAMA_TAGS   || 'http://127.0.0.1:11434/api/tags';
-const MODEL_A       = process.env.MODEL_A       || 'gemma3:12b';
-const MODEL_B       = process.env.MODEL_B       || 'mistral:latest';
-const MODEL_C       = process.env.MODEL_C       || 'qwen2.5:latest';
+const MODEL_A       = process.env.MODEL_A       || 'deepseek-r1:latest';
+const MODEL_B       = process.env.MODEL_B       || 'gemma2:latest';
+const MODEL_C       = process.env.MODEL_C       || 'qwen2.5:3b';
 const DEBATE_ROUNDS = parseInt(process.env.DEBATE_ROUNDS  || '3', 10);
 const TIMEOUT_MS    = parseInt(process.env.OLLAMA_TIMEOUT_MS || '600000', 10);
 const PORT          = parseInt(process.env.PORT || '5050', 10);
