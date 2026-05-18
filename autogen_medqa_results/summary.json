@@ -1,0 +1,15 @@
+{
+  "cases": {
+    "attempted": 3,
+    "completed": 3,
+    "errors": 0
+  },
+  "accuracy": {
+    "correct": 3,
+    "accuracy": 1.0
+  },
+  "time": {
+    "total_benchmark_seconds": 387.941,
+    "average_case_seconds": 129.302
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "models": {
+    "initial_diagnostician": "gpt-oss:20b",
+    "clinical_evidence_auditor": "ministral-3:14b",
+    "question_intent_auditor": "gemma3:12b",
+    "final_cmo_reviser": "gpt-oss:20b"
+  },
+  "pipeline": {
+    "stage_1": "GPT-OSS Diagnostician produces the initial structured medical answer.",
+    "stage_2": "Ministral Clinical Evidence Auditor checks whether the answer matches the patient's findings.",
+    "stage_3": "Gemma Question-Intent Auditor checks whether the answer matches the exact task and answer options.",
+    "stage_4": "GPT-OSS Final CMO revises or preserves the initial answer after integrating both audits."
+  },
+  "dataset": {
+    "name": "Layered-Labs/benchbase-medqa",
+    "split": "test"
+  },
+  "cases": {
+    "attempted": 1273,
+    "completed": 1269,
+    "errors": 4
+  },
+  "accuracy": {
+    "diagnostician_accuracy": 0.846093133385951,
+    "clinical_auditor_accuracy": 0.8368794326241135,
+    "intent_auditor_accuracy": 0.653270291568164,
+    "final_correct": 1085,
+    "final_accuracy": 0.8550039401103231
+  },
+  "parsing": {
+    "parsed_diagnostician_answers": 1267,
+    "unparsed_diagnostician_answers": 2,
+    "parsed_clinical_auditor_answers": 1269,
+    "unparsed_clinical_auditor_answers": 0,
+    "parsed_intent_auditor_answers": 1269,
+    "unparsed_intent_auditor_answers": 0
+  },
+  "collaboration_outcomes": {
+    "maintained_correct": 1066,
+    "corrected_by_pipeline": 19,
+    "degraded_by_pipeline": 6,
+    "maintained_incorrect": 178
+  },
+  "collaboration_subtypes": {
+    "all_agents_wrong": 155,
+    "all_agents_correct": 793,
+    "cmo_resisted_incorrect_intent_auditor": 257,
+    "cmo_resisted_both_incorrect_auditors": 15,
+    "both_auditors_helped_final_correction": 9,
+    "cmo_failed_to_follow_correct_intent_auditor": 21,
+    "both_auditors_misled_final_judge": 5,
+    "cmo_corrected_all_prior_agents": 7,
+    "cmo_resisted_incorrect_clinical_auditor": 1,
+    "cmo_failed_to_follow_both_correct_auditors": 2,
+    "intent_auditor_helped_final_correction": 3,
+    "intent_auditor_misled_final_judge": 1
+  },
+  "time": {
+    "total_benchmark_seconds": 30544.795,
+    "sum_case_seconds": 24402.004,
+    "average_case_seconds": 19.229
+  },
+  "output_folders": {
+    "completed": "testing4\\completed",
+    "errors": "testing4\\errors",
+    "maintained_correct": "testing4\\analysis_cases\\1_maintained_correct",
+    "corrected_by_pipeline": "testing4\\analysis_cases\\2_corrected_by_pipeline",
+    "degraded_by_pipeline": "testing4\\analysis_cases\\3_degraded_by_pipeline",
+    "maintained_incorrect": "testing4\\analysis_cases\\4_maintained_incorrect"
+  }
+}

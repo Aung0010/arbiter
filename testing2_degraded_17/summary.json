@@ -1,0 +1,61 @@
+{
+  "models": {
+    "diagnostician": "gemma3:12b",
+    "strict_reviewer": "ministral-3:14b",
+    "chief_medical_officer": "gpt-oss:20b"
+  },
+  "testing_note": {
+    "experiment": "Testing 2",
+    "change_from_testing_1": "Swapped Diagnostician and CMO model roles. Diagnostician is now gemma3:12b and final CMO is now gpt-oss:20b. Reviewer approach is kept consistent, with only mandatory A-D output rules added."
+  },
+  "pipeline": {
+    "stage_1": "Diagnostician gives structured first-pass reasoning.",
+    "stage_2": "Reviewer strictly evaluates and recommends an answer.",
+    "stage_3": "CMO provides final JSON decision and visible rationale."
+  },
+  "dataset": {
+    "name": "Layered-Labs/benchbase-medqa",
+    "split": "test"
+  },
+  "cases": {
+    "attempted": 17,
+    "completed": 17,
+    "errors": 0
+  },
+  "accuracy": {
+    "diagnostician_accuracy": 0.11764705882352941,
+    "reviewer_accuracy": 0.11764705882352941,
+    "final_correct": 13,
+    "final_accuracy": 0.7647058823529411
+  },
+  "parsing": {
+    "parsed_diagnostician_answers": 17,
+    "unparsed_diagnostician_answers": 0,
+    "parsed_reviewer_answers": 17,
+    "unparsed_reviewer_answers": 0
+  },
+  "collaboration_outcomes": {
+    "maintained_correct": 2,
+    "corrected_by_pipeline": 11,
+    "degraded_by_pipeline": 0,
+    "maintained_incorrect": 4
+  },
+  "collaboration_subtypes": {
+    "all_agents_correct": 2,
+    "all_agents_wrong": 4,
+    "judge_corrected_both": 11
+  },
+  "time": {
+    "total_benchmark_seconds": 230.735,
+    "sum_case_seconds": 230.582,
+    "average_case_seconds": 13.564
+  },
+  "output_folders": {
+    "completed": "testing2_degraded_17\\completed",
+    "errors": "testing2_degraded_17\\errors",
+    "maintained_correct": "testing2_degraded_17\\analysis_cases\\1_maintained_correct",
+    "corrected_by_pipeline": "testing2_degraded_17\\analysis_cases\\2_corrected_by_pipeline",
+    "degraded_by_pipeline": "testing2_degraded_17\\analysis_cases\\3_degraded_by_pipeline",
+    "maintained_incorrect": "testing2_degraded_17\\analysis_cases\\4_maintained_incorrect"
+  }
+}

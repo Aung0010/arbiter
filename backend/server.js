@@ -14,19 +14,21 @@ const ARCHITECTURE = 'two_llm_judge_v1';
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '4mb' }));
+app.use(express.json({ limit: '2mb' }));
 
-// ---------------------------------------------------------------------------
-// Core Ollama caller
-// ---------------------------------------------------------------------------
 async function callOllama(model, prompt) {
   const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const t = setTimeout(() => controller.abort(), OLLAMA_TIMEOUT_MS);
   try {
     const resp = await fetch(OLLAMA_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, prompt, stream: false, options: { temperature: 0 } }),
+      body: JSON.stringify({
+        model,
+        prompt,
+        stream: false,
+        options: { temperature: 0 },
+      }),
       signal: controller.signal,
     });
     if (!resp.ok) {
@@ -108,7 +110,7 @@ Consider whether to maintain or change your view based on the other expert's arg
 
   return `You are ${modelSelf} in a discussion with ${modelOther}.
 
-Original Question:
+Question:
 ${question}
 ${prevBlock}
 
@@ -174,97 +176,20 @@ Return JSON in exactly this format:
 }`;
 }
 
-// ---------------------------------------------------------------------------
-// Shared helpers
-// ---------------------------------------------------------------------------
 function requireQuestion(body) {
   const q = body && body.question;
   if (typeof q !== 'string' || !q.trim()) {
-    return { error: 'Missing or empty "question" field (string).' };
+    return { error: 'Missing or empty "question" (string).' };
   }
   return { question: q.trim() };
 }
 
-// SSE helpers
-function sseWrite(res, event, data) {
-  res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-}
-
-// ---------------------------------------------------------------------------
-// Health check — lists available Ollama models
-// ---------------------------------------------------------------------------
-app.get('/api/health', async (req, res) => {
-  try {
-    const resp = await fetch(OLLAMA_TAGS);
-    const data = resp.ok ? await resp.json() : { models: [] };
-    const availableModels = (data.models || []).map(m => m.name);
-    res.json({
-      status: 'ok',
-      backend: 'running',
-      configured: MODEL_LABELS,
-      ollama_available: availableModels,
-      model_a_ready: availableModels.some(n => n.startsWith(MODEL_A.split(':')[0])),
-      model_b_ready: availableModels.some(n => n.startsWith(MODEL_B.split(':')[0])),
-      model_c_ready: availableModels.some(n => n.startsWith(MODEL_C.split(':')[0])),
-    });
-  } catch (e) {
-    res.status(503).json({ status: 'error', message: `Cannot reach Ollama: ${e.message}` });
-  }
-});
-
-// ---------------------------------------------------------------------------
-// POST /api/chat/summarize  { perspectives: string[] } → { summary: string }
-// ---------------------------------------------------------------------------
-app.post('/api/chat/summarize', async (req, res) => {
-  try {
-    const { perspectives } = req.body;
-    if (!Array.isArray(perspectives) || perspectives.length === 0) {
-      return res.status(400).json({ status: 'error', message: 'perspectives must be a non-empty array of strings.' });
-    }
-    const summary = await callOllama(MODEL_A, buildSummarizePrompt(perspectives));
-    res.json({ status: 'success', summary });
-  } catch (e) {
-    console.error('/api/chat/summarize error:', e);
-    res.status(500).json({ status: 'error', message: e.message });
-  }
-});
-
-// ---------------------------------------------------------------------------
-// POST /api/chat/consensus  { perspectives: string[] }
-//   → { isConsensus: bool, answer: string, reasoning: string }
-// ---------------------------------------------------------------------------
-app.post('/api/chat/consensus', async (req, res) => {
-  try {
-    const { perspectives } = req.body;
-    if (!Array.isArray(perspectives) || perspectives.length === 0) {
-      return res.status(400).json({ status: 'error', message: 'perspectives must be a non-empty array of strings.' });
-    }
-    const raw = await callOllama(MODEL_A, buildConsensusPrompt(perspectives));
-
-    const isConsensusMatch = raw.match(/CONSENSUS:\s*(YES|NO)/i);
-    const reasoningMatch   = raw.match(/REASONING:\s*(.*?)(?=\nANSWER:|$)/is);
-    const answerMatch      = raw.match(/ANSWER:\s*([\s\S]*)/i);
-
-    const isConsensus = isConsensusMatch ? isConsensusMatch[1].toUpperCase() === 'YES' : false;
-    const reasoning   = reasoningMatch   ? reasoningMatch[1].trim() : 'Unable to determine.';
-    const answer      = answerMatch      ? answerMatch[1].trim()    : raw;
-
-    res.json({ status: 'success', isConsensus, reasoning, answer });
-  } catch (e) {
-    console.error('/api/chat/consensus error:', e);
-    res.status(500).json({ status: 'error', message: e.message });
-  }
-});
-
-// ---------------------------------------------------------------------------
-// POST /api/chat/debate  (blocking — returns full result when done)
-// ---------------------------------------------------------------------------
-app.post('/api/chat/debate', async (req, res) => {
+async function handleChatModel(req, res, modelName) {
   try {
     const parsed = requireQuestion(req.body);
     if (parsed.error) return res.status(400).json({ status: 'error', message: parsed.error });
-    const result = await runMccDebate(parsed.question);
-    res.json({ status: 'success', ...result });
+    const answer = await callOllama(modelName, buildSingleModelPrompt(parsed.question, modelName));
+    res.json({ status: 'success', model: modelName, answer });
   } catch (e) {
     console.error(e);
     res.status(500).json({ status: 'error', message: e.message || 'Model call failed' });
