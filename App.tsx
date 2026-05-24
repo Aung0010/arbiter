@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Sidebar from './components/Sidebar';
 import DebateRoundView from './components/DebateRoundView';
 import FinalAnswer from './components/FinalAnswer';
+import OnboardingModal from './components/OnboardingModal';
 import { ChatSession, DebateRound, FinalConsensus } from './types';
 import { DebateOrchestrator } from './services/orchestrator';
 
@@ -15,6 +16,9 @@ const App: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(
+    () => localStorage.getItem('arbiter_onboarding_done') !== 'true'
+  );
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -111,8 +115,14 @@ const App: React.FC = () => {
     }
   };
 
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('arbiter_onboarding_done', 'true');
+    setShowOnboarding(false);
+  };
+
   return (
     <div className="flex h-screen bg-base-DEFAULT overflow-hidden font-sans text-slate-custom">
+      {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
       <Sidebar 
         sessions={sessions} 
         activeSessionId={activeSessionId}
@@ -120,6 +130,7 @@ const App: React.FC = () => {
         onNewChat={handleNewChat}
         isOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        onShowTour={() => setShowOnboarding(true)}
       />
 
       <div className="flex-1 flex flex-col h-full relative">

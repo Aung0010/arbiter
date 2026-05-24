@@ -8,6 +8,7 @@ interface SidebarProps {
   onNewChat: () => void;
   isOpen: boolean;
   toggleSidebar: () => void;
+  onShowTour: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
@@ -16,7 +17,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onSelectSession, 
   onNewChat,
   isOpen,
-  toggleSidebar
+  toggleSidebar,
+  onShowTour
 }) => {
   return (
     <>
@@ -87,6 +89,19 @@ const Sidebar: React.FC<SidebarProps> = ({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Tour button */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-base-divider bg-base-panel">
+          <button
+            onClick={onShowTour}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded text-xs text-slate-custom hover:bg-layer-white hover:text-brand-navy transition-colors"
+          >
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Show onboarding tour
+          </button>
         </div>
       </div>
     </>
