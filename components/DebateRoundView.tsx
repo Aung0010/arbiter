@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { DebateRound, AgentRole, AgentResponse } from '../types';
+import { DebateRound, AgentResponse } from '../types';
 import AgentBadge from './AgentBadge';
 import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
 
 interface DebateRoundViewProps {
   round: DebateRound;
@@ -46,7 +44,11 @@ const DebateRoundView: React.FC<DebateRoundViewProps> = ({ round, isLatest }) =>
                 <span className="font-medium text-brand-navy block mb-1">Execution Summary</span>
                 {round.summary}
             </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div
+            className={`grid grid-cols-1 gap-4 ${
+              round.responses.length <= 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'
+            }`}
+          >
             {round.responses.map((response, idx) => (
               <div 
                  key={idx} 
@@ -62,7 +64,7 @@ const DebateRoundView: React.FC<DebateRoundViewProps> = ({ round, isLatest }) =>
                   <AgentBadge role={response.agentId} size="sm" />
                 </div>
                 <div className="text-sm text-slate-custom max-h-60 overflow-y-auto prose prose-sm prose-slate dark:prose-invert">
-                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{response.content}</ReactMarkdown>
+                  <ReactMarkdown>{response.content}</ReactMarkdown>
                 </div>
               </div>
             ))}
@@ -84,7 +86,7 @@ const DebateRoundView: React.FC<DebateRoundViewProps> = ({ round, isLatest }) =>
                </button>
             </div>
             <div className="p-6 md:p-8 overflow-y-auto prose prose-slate prose-sm md:prose-base dark:prose-invert max-w-none text-slate-custom flex-1">
-               <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{selectedResponse.content}</ReactMarkdown>
+               <ReactMarkdown>{selectedResponse.content}</ReactMarkdown>
             </div>
           </div>
         </div>

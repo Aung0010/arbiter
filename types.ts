@@ -23,6 +23,8 @@ export interface FinalConsensus {
   answer: string;
   reasoning: string;
   participatingAgents: AgentRole[];
+  /** Optional subtitle in the verdict header instead of participatingAgents.length. */
+  participantSummary?: string;
 }
 
 export interface ChatSession {

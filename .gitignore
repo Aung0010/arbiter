@@ -152,3 +152,6 @@ pnpm-debug.log*
 # Misc
 .DS_Store
 *.log
+
+# Testing
+backend/testing/

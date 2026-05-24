@@ -67,6 +67,54 @@ function checkConsensusTwo(aAnswer, bAnswer) {
   return a === b;
 }
 
+/**
+ * When strict string equality fails, ask the judge model whether both round-0
+ * answers convey the same substantive conclusion (same number, option, advice, etc.).
+ */
+function buildRoundZeroSemanticConsensusPrompt(question, answerA, answerB) {
+  return `You arbitrate whether two independent expert answers agree on the substance of the user's question.
+
+[Question]
+${question}
+
+[Expert A answer]
+${answerA}
+
+[Expert B answer]
+${answerB}
+
+Decide if both answers reach the same substantive conclusion for the user. Minor differences in explanation, formatting, punctuation, or phrasing must NOT count as disagreement if the core answer is the same (e.g. "2100" vs "2,100" or different verbal work for the same result).
+
+Output ONLY valid JSON. Do not use markdown fences.
+
+Return JSON in exactly this format:
+{
+  "agree_on_substance": true,
+  "reason": "one short sentence"
+}`;
+}
+
+async function semanticConsensusViaJudge(question, answerA, answerB) {
+  try {
+    const raw = await callOllama(
+      MODEL_JUDGE,
+      buildRoundZeroSemanticConsensusPrompt(question, answerA, answerB)
+    );
+    const parsed = extractJsonFromText(raw);
+    if (!parsed) return false;
+    const v = parsed.agree_on_substance;
+    if (typeof v === 'boolean') return v;
+    if (typeof v === 'string') {
+      const s = v.trim().toLowerCase();
+      return s === 'true' || s === 'yes';
+    }
+    return false;
+  } catch (e) {
+    console.error('semanticConsensusViaJudge:', e);
+    return false;
+  }
+}
+
 function buildSingleModelPrompt(question, modelLabel) {
   return `You are a helpful assistant (${modelLabel}).
 
@@ -219,15 +267,33 @@ async function runTwoLlmJudgeDebate(question) {
   let curA = initial.a;
   let curB = initial.b;
 
-  const initConsensus = checkConsensusTwo(curA.answer, curB.answer);
+  const textConsensus = checkConsensusTwo(curA.answer, curB.answer);
+  let judgeRoundZeroConsensus = false;
+  if (!textConsensus) {
+    judgeRoundZeroConsensus = await semanticConsensusViaJudge(
+      question,
+      curA.answer,
+      curB.answer
+    );
+  }
+  const initConsensus = textConsensus || judgeRoundZeroConsensus;
+
   const history = [{ round: 0, a: { ...curA }, b: { ...curB } }];
 
   let debateConsensus = initConsensus;
   let debateFailed = false;
   let failureReason = null;
-  let debateFinalSummary = initConsensus
-    ? 'Both experts agreed in round 0.'
-    : 'Experts disagreed after round 0.';
+  let postDebateSemanticConsensusApplied = false;
+  let debateFinalSummary;
+  if (!initConsensus) {
+    debateFinalSummary = 'Experts disagreed after round 0.';
+  } else if (textConsensus) {
+    debateFinalSummary =
+      'Both experts agreed in round 0 (normalized text match).';
+  } else {
+    debateFinalSummary =
+      'Semantic agreement after round 0: judge confirmed same substantive conclusion despite different wording.';
+  }
 
   if (!initConsensus) {
     for (let r = 1; r <= DEBATE_ROUNDS; r++) {
@@ -281,6 +347,20 @@ async function runTwoLlmJudgeDebate(question) {
         failureReason = 'two_way_disagree';
         debateFinalSummary = `No consensus after ${DEBATE_ROUNDS} debate rounds.`;
       }
+    }
+  }
+
+  // Verbose prose often hides agreement: if strict text never matched across debate rounds but both
+  // conclusions align (e.g. same MCQ option buried in paragraphs), reconcile once via the judge model.
+  if (!debateConsensus && history.length > 1) {
+    const substantiveMatch = await semanticConsensusViaJudge(question, curA.answer, curB.answer);
+    if (substantiveMatch) {
+      debateConsensus = true;
+      debateFailed = false;
+      failureReason = null;
+      postDebateSemanticConsensusApplied = true;
+      debateFinalSummary =
+        'Substantive agreement after debate verified by semantic review before final arbitration.';
     }
   }
 
@@ -356,6 +436,12 @@ async function runTwoLlmJudgeDebate(question) {
     initial_choices: { a: initialRound.a.answer, b: initialRound.b.answer },
     debate_history: history,
     debate_final_summary: debateFinalSummary,
+    round_zero_consensus_source: !initConsensus
+      ? 'none'
+      : textConsensus
+        ? 'normalized_text'
+        : 'judge_semantic',
+    post_debate_semantic_consensus: postDebateSemanticConsensusApplied,
   };
 
   return {

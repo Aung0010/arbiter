@@ -15,9 +15,9 @@ const AgentBadge: React.FC<AgentBadgeProps> = ({ role, size = 'md' }) => {
 
   // Human-readable labels; these match the model names set in the backend env
   const text: Record<AgentRole, string> = {
-    [AgentRole.MODEL_A]: 'Gemma 3',
-    [AgentRole.MODEL_B]: 'Mistral',
-    [AgentRole.MODEL_C]: 'Qwen 2.5',
+    [AgentRole.MODEL_A]: 'Expert A (Gemma 3)',
+    [AgentRole.MODEL_B]: 'Expert B (Mistral)',
+    [AgentRole.MODEL_C]: 'Arbiter · Judge',
   };
 
   const icons: Record<AgentRole, React.ReactNode> = {

@@ -1,32 +1,12 @@
 import { AgentRole, AgentResponse, DebateRound, FinalConsensus } from '../types';
-import {
-  streamDebate,
-  generateSummary,
-  checkConsensus,
-  StreamedRound,
-} from './geminiService';
-
-// Map backend model slot keys → frontend AgentRole enum values
-const SLOT_TO_ROLE: Record<string, AgentRole> = {
-  model_a: AgentRole.MODEL_A,
-  model_b: AgentRole.MODEL_B,
-  model_c: AgentRole.MODEL_C,
-};
+import { DebatePipelinePayload, fetchDebatePipeline } from './geminiService';
 
 /**
- * DebateOrchestrator
- *
- * Streams the MCC debate from the backend and translates each incoming
- * round into the existing DebateRound / AgentResponse shape so the UI
- * components work without any changes.
- *
- * Consensus is checked after each round; if reached, the debate short-circuits
- * and returns immediately — identical to the previous behaviour, but now driven
- * by Ollama instead of the Gemini API.
+ * Bridges the Jimmy two-expert + judge REST pipeline to DebateRound / FinalConsensus shapes.
+ * All rounds arrive when the backend finishes — the UI stays responsive via isProcessing state.
  */
 export class DebateOrchestrator {
   private userPrompt: string;
-  private rounds: DebateRound[] = [];
   private onUpdate: (rounds: DebateRound[]) => void;
 
   constructor(userPrompt: string, onUpdate: (rounds: DebateRound[]) => void) {
@@ -34,93 +14,59 @@ export class DebateOrchestrator {
     this.onUpdate = onUpdate;
   }
 
-  public async runDebate(): Promise<FinalConsensus> {
-    return new Promise<FinalConsensus>((resolve, reject) => {
-      // Accumulator — may resolve early via consensus check
-      let resolved = false;
-      let pendingFinal: { answer: string; reasoning: string } | null = null;
+  private mapPayloadToRounds(payload: DebatePipelinePayload): DebateRound[] {
+    const hist = Array.isArray(payload.debate_history) ? payload.debate_history : [];
 
-      const handleRound = async (streamedRound: StreamedRound) => {
-        if (resolved) return;
+    return hist.map((row, idx) => {
+      const ts = Date.now();
+      const responses: AgentResponse[] = [
+        { agentId: AgentRole.MODEL_A, content: row.a.answer, timestamp: ts },
+        { agentId: AgentRole.MODEL_B, content: row.b.answer, timestamp: ts },
+      ];
 
-        // Map backend responses onto AgentResponse[]
-        const responses: AgentResponse[] = streamedRound.responses.map(r => ({
-          agentId: SLOT_TO_ROLE[r.agentId] ?? (r.agentId as AgentRole),
-          content: r.content,
-          timestamp: r.timestamp,
-        }));
+      // Phase-local copy only: pinning debate_final_summary on the last accordion row made the UI
+      // falsely claim "no consensus" even when expert bodies clearly agreed paragraph-for-paragraph.
+      const summary =
+        idx === 0
+          ? 'Independent expert outputs.'
+          : idx === hist.length - 1
+            ? 'Final expert replies forwarded to arbiter verdict.'
+            : 'Cross-examination between experts.';
 
-        // Generate a 1-sentence summary of this round from the backend
-        const summary = await generateSummary(responses.map(r => r.content)).catch(() => '');
-
-        const round: DebateRound = {
-          roundNumber: streamedRound.round,
-          responses,
-          summary,
-        };
-
-        this.rounds.push(round);
-        this.onUpdate([...this.rounds]);
-
-        // --- Early-exit consensus check ---
-        const perspectives = responses.map(r => r.content);
-        const consensus = await checkConsensus(perspectives).catch(() => ({
-          isConsensus: false,
-          answer: '',
-          reasoning: '',
-        }));
-
-        if (consensus.isConsensus && consensus.answer) {
-          resolved = true;
-          resolve({
-            answer: consensus.answer,
-            reasoning: `Consensus reached after Round ${streamedRound.round}: ${consensus.reasoning}`,
-            participatingAgents: [AgentRole.MODEL_A, AgentRole.MODEL_B, AgentRole.MODEL_C],
-          });
-        }
+      return {
+        roundNumber: row.round + 1,
+        responses,
+        summary,
       };
-
-      const handleFinal = (final: { answer: string; reasoning: string }) => {
-        // Store for use if consensus never fired
-        pendingFinal = final;
-      };
-
-      const handleDone = () => {
-        if (resolved) return;
-        if (pendingFinal) {
-          resolved = true;
-          resolve({
-            answer: pendingFinal.answer,
-            reasoning: pendingFinal.reasoning,
-            participatingAgents: [AgentRole.MODEL_A, AgentRole.MODEL_B, AgentRole.MODEL_C],
-          });
-        } else {
-          reject(new Error('Debate stream ended without a final answer.'));
-        }
-      };
-
-      const handleError = (msg: string) => {
-        if (!resolved) {
-          resolved = true;
-          reject(new Error(msg));
-        }
-      };
-
-      // Kick off the SSE stream — rounds arrive asynchronously
-      streamDebate(
-        this.userPrompt,
-        (_statusMsg, _round) => {
-          // Status messages are informational; nothing to do in the orchestrator
-        },
-        (streamedRound) => {
-          // We must await the async handleRound but the SSE callback is sync.
-          // Fire-and-forget is intentional here; the SSE reader is sequential
-          // so we won't get the next round event until Node finishes this one.
-          handleRound(streamedRound).catch(handleError);
-        },
-        handleFinal,
-        handleError,
-      ).then(handleDone).catch(handleError);
     });
+  }
+
+  private mapFinalConsensus(payload: DebatePipelinePayload): FinalConsensus {
+    const j = payload.judge_result ?? ({} as DebatePipelinePayload['judge_result']);
+    const line = `${payload.models.model_a} vs ${payload.models.model_b}; judge ${payload.models.model_judge}`;
+    const bits = [
+      line,
+      `Debate consensus: ${payload.debate_result.consensus}`,
+      payload.debate_result.post_debate_semantic_consensus
+        ? 'Substantive convergence confirmed by judge after debate (answers were not identical as raw text).'
+        : null,
+      j.decision_type ? `Judge: ${j.decision_type}` : null,
+      j.winner != null && String(j.winner).length ? `Winner: ${j.winner}` : null,
+      j.reason ? String(j.reason) : null,
+    ].filter(Boolean) as string[];
+
+    return {
+      answer: (j.final_answer && j.final_answer.trim()) || '',
+      reasoning: bits.join(' · '),
+      participatingAgents: [AgentRole.MODEL_A, AgentRole.MODEL_B, AgentRole.MODEL_C],
+      participantSummary: 'Experts · Arbiter Judge',
+    };
+  }
+
+  public async runDebate(): Promise<FinalConsensus> {
+    const payload = await fetchDebatePipeline(this.userPrompt);
+    const rounds = this.mapPayloadToRounds(payload);
+    this.onUpdate(rounds);
+    return this.mapFinalConsensus(payload);
   }
 }

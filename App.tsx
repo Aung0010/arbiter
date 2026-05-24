@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import Sidebar from './components/Sidebar';
 import DebateRoundView from './components/DebateRoundView';
 import FinalAnswer from './components/FinalAnswer';
@@ -205,7 +204,9 @@ const App: React.FC = () => {
                            <div className="w-2 h-2 bg-brand-azure rounded-sm"></div>
                            <div className="w-2 h-2 bg-brand-azure rounded-sm"></div>
                        </div>
-                       <span className="ml-3 text-sm text-slate-custom font-medium">Model consensus pending...</span>
+                       <span className="ml-3 text-sm text-slate-custom font-medium">
+                         Backend debate in progress — this may take several minutes...
+                       </span>
                    </div>
                 )}
 
@@ -265,7 +266,10 @@ const App: React.FC = () => {
               </button>
             </form>
             <div className="text-center mt-3">
-                 <p className="text-xs text-slate-custom">Powered by Qwen2.5, Gemma3, and Ministral3.</p>
+                 <p className="text-xs text-slate-custom">
+                   Two Ollama experts plus an arbiter judge (see onboarding). Run the backend on port
+                   5050 — Vite proxies <code className="text-brand-navy">/api</code> in development.
+                 </p>
             </div>
           </div>
         </div>

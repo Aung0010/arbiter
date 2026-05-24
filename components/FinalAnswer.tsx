@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { FinalConsensus } from '../types';
 import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
+import { FinalConsensus } from '../types';
 
 interface FinalAnswerProps {
   consensus: FinalConsensus;
@@ -26,13 +24,14 @@ const FinalAnswer: React.FC<FinalAnswerProps> = ({ consensus, onRegenerate }) =>
             </div>
             <span className="text-xs font-medium text-slate-custom uppercase tracking-wider flex items-center">
                 <span className="text-signal-green mr-1.5">●</span>
-                {consensus.participatingAgents.length} Models Verified
+                {consensus.participantSummary ??
+                  `${consensus.participatingAgents.length} Models Verified`}
             </span>
         </div>
         
         <div className="p-6">
           <div className="prose prose-slate dark:prose-invert max-w-none text-slate-custom leading-relaxed text-sm">
-            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{consensus.answer}</ReactMarkdown>
+            <ReactMarkdown>{consensus.answer}</ReactMarkdown>
           </div>
           
           <div className="mt-6 pt-6 border-t border-base-divider flex flex-col sm:flex-row sm:items-center justify-between gap-4">

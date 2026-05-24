@@ -1,148 +1,87 @@
 /**
- * ollamaService.ts
- * All communication with the Ollama/Express backend.
- * No Google API keys — all inference runs locally via Ollama.
+ * Backend API client — Ollama/Express only (no Gemini).
+ * In development, Vite proxies /api → http://localhost:${BACKEND_PORT}.
+ * In production, set VITE_BACKEND_URL to your API origin (no trailing slash).
  */
 
-// In development, Vite proxies /api → http://localhost:5050
-// In production, set VITE_BACKEND_URL in your .env
-const BACKEND = (import.meta as any).env?.VITE_BACKEND_URL ?? '';
+const BACKEND_ORIGIN =
+  typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL
+    ? String(import.meta.env.VITE_BACKEND_URL).replace(/\/+$/, '')
+    : '';
 
-async function post<T>(path: string, body: Record<string, unknown>): Promise<T> {
-  const res = await fetch(`${BACKEND}${path}`, {
+async function postJson<T>(path: string, body: Record<string, unknown>): Promise<T> {
+  const url = `${BACKEND_ORIGIN}${path}`;
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Backend ${path} returned ${res.status}: ${text.slice(0, 300)}`);
+    throw new Error(`Backend ${path} returned ${res.status}: ${text.slice(0, 400)}`);
   }
   return res.json() as Promise<T>;
 }
 
-// ---------------------------------------------------------------------------
-// generateSummary — calls POST /api/chat/summarize
-// ---------------------------------------------------------------------------
-export const generateSummary = async (perspectives: string[]): Promise<string> => {
-  try {
-    const data = await post<{ summary: string }>('/api/chat/summarize', { perspectives });
-    return data.summary ?? 'Consolidating perspectives...';
-  } catch (e) {
-    console.error('generateSummary error:', e);
-    return 'Consolidating perspectives...';
-  }
-};
-
-// ---------------------------------------------------------------------------
-// checkConsensus — calls POST /api/chat/consensus
-// ---------------------------------------------------------------------------
-export const checkConsensus = async (
-  perspectives: string[]
-): Promise<{ isConsensus: boolean; answer: string; reasoning: string }> => {
-  try {
-    const data = await post<{ isConsensus: boolean; answer: string; reasoning: string }>(
-      '/api/chat/consensus',
-      { perspectives }
-    );
-    return {
-      isConsensus: Boolean(data.isConsensus),
-      answer: data.answer ?? '',
-      reasoning: data.reasoning ?? '',
-    };
-  } catch (e) {
-    console.error('checkConsensus error:', e);
-    return { isConsensus: false, answer: '', reasoning: 'Error checking consensus.' };
-  }
-};
-
-// ---------------------------------------------------------------------------
-// streamDebate — calls POST /api/chat/debate/stream (SSE)
-// Calls onRound for each completed round, then onFinal with the synthesis.
-// ---------------------------------------------------------------------------
-export interface StreamedRound {
+export interface DebateHistoryRow {
   round: number;
-  responses: Array<{ agentId: string; content: string; timestamp: number }>;
+  a: { answer: string };
+  b: { answer: string };
 }
 
-export interface StreamedFinal {
-  answer: string;
-  reasoning: string;
-  models: Record<string, string>;
+export interface DebatePipelinePayload {
+  status: 'success';
+  architecture: string;
+  models: { model_a: string; model_b: string; model_judge: string };
+  debate_rounds: number;
+  debate_history: DebateHistoryRow[];
+  debate_result: {
+    failed: boolean;
+    failure_reason: string | null;
+    consensus: boolean;
+    debate_final_summary: string;
+    /** True when substantive agreement only detected after debate via semanticConsensusViaJudge. */
+    post_debate_semantic_consensus?: boolean;
+  };
+  judge_result: {
+    final_answer: string;
+    decision_type?: string;
+    winner?: string | null;
+    reason?: string | null;
+  };
 }
 
-export const streamDebate = async (
-  question: string,
-  onStatus: (msg: string, round: number) => void,
-  onRound: (round: StreamedRound) => void,
-  onFinal: (final: StreamedFinal) => void,
-  onError: (msg: string) => void,
-): Promise<void> => {
-  const res = await fetch(`${BACKEND}/api/chat/debate/stream`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question }),
-  });
-
-  if (!res.ok || !res.body) {
-    const text = await res.text().catch(() => 'Unknown error');
-    onError(`Backend error ${res.status}: ${text.slice(0, 200)}`);
-    return;
+/**
+ * Runs the full two-expert debate + mandatory judge pipeline (blocking until complete).
+ */
+export async function fetchDebatePipeline(question: string): Promise<DebatePipelinePayload> {
+  const data = await postJson<DebatePipelinePayload>('/api/chat/debate', { question });
+  if (data.status !== 'success') {
+    throw new Error('Debate finished without success status.');
   }
+  return data;
+}
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-
-    // SSE events are separated by double-newlines
-    const parts = buffer.split('\n\n');
-    buffer = parts.pop() ?? '';
-
-    for (const part of parts) {
-      const lines = part.split('\n');
-      let event = '';
-      let dataStr = '';
-
-      for (const line of lines) {
-        if (line.startsWith('event: ')) event = line.slice(7).trim();
-        if (line.startsWith('data: '))  dataStr = line.slice(6).trim();
-      }
-
-      if (!event || !dataStr) continue;
-
-      try {
-        const payload = JSON.parse(dataStr);
-        if (event === 'status') onStatus(payload.message, payload.round);
-        if (event === 'round')  onRound(payload);
-        if (event === 'final')  onFinal(payload);
-        if (event === 'error')  onError(payload.message);
-      } catch {
-        // ignore malformed SSE chunk
-      }
-    }
-  }
-};
-
-// ---------------------------------------------------------------------------
-// checkBackendHealth — convenience for startup validation
-// ---------------------------------------------------------------------------
+/** GET /api/health — aligns with Jimmy backend route. */
 export const checkBackendHealth = async (): Promise<{
   ok: boolean;
   configured: Record<string, string>;
   available: string[];
 }> => {
   try {
-    const res = await fetch(`${BACKEND}/api/health`);
+    const url = `${BACKEND_ORIGIN}/api/health`;
+    const res = await fetch(url);
     const data = await res.json();
+    const ok = data.status === 'ok';
+    const models = data.models ?? {};
     return {
-      ok: data.status === 'ok',
-      configured: data.configured ?? {},
-      available: data.ollama_available ?? [],
+      ok,
+      configured: {
+        model_a: String(models.model_a ?? ''),
+        model_b: String(models.model_b ?? ''),
+        model_judge: String(models.model_judge ?? ''),
+      },
+      available: Array.isArray(data.ollama_available) ? data.ollama_available : [],
     };
   } catch {
     return { ok: false, configured: {}, available: [] };
