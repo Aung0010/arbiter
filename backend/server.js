@@ -1,3 +1,4 @@
+require('dotenv').config({ path: '../.env.local' });
 const express = require('express');
 const cors = require('cors');
 
@@ -22,7 +23,10 @@ async function callOllama(model, prompt) {
   try {
     const resp = await fetch(OLLAMA_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OLLAMA_API_KEY}`
+      },
       body: JSON.stringify({
         model,
         prompt,
@@ -31,8 +35,10 @@ async function callOllama(model, prompt) {
       }),
       signal: controller.signal,
     });
+    
     if (!resp.ok) {
       const errText = await resp.text();
+      console.error('Full Ollama error:', errText);
       throw new Error(`Ollama HTTP ${resp.status}: ${errText.slice(0, 500)}`);
     }
     const data = await resp.json();
@@ -493,6 +499,8 @@ app.get('/api/health', (_req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Chat + 2-LLM+Judge backend on http://localhost:${PORT}`);
+  console.log(`Backend running on port ${PORT}`);
+  console.log(`Loaded Key Check:`, process.env.OLLAMA_API_KEY ? "Key Found! ✅" : "Key is Undefined ❌");
   console.log(`  Architecture: ${ARCHITECTURE}`);
   console.log(`  Model A: ${MODEL_A}`);
   console.log(`  Model B: ${MODEL_B}`);
