@@ -39,6 +39,8 @@ export interface DebatePipelinePayload {
     failed: boolean;
     failure_reason: string | null;
     consensus: boolean;
+    /** Which round consensus was detected: 0 = initial (before debate), 1-N = debate round, null = no consensus */
+    consensus_round: number | null;
     debate_final_summary: string;
     /** True when substantive agreement only detected after debate via semanticConsensusViaJudge. */
     post_debate_semantic_consensus?: boolean;

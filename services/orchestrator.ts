@@ -16,6 +16,8 @@ export class DebateOrchestrator {
 
   private mapPayloadToRounds(payload: DebatePipelinePayload): DebateRound[] {
     const hist = Array.isArray(payload.debate_history) ? payload.debate_history : [];
+    const consensusRound = payload.debate_result?.consensus_round ?? null;
+    const totalRounds = hist.length;
 
     return hist.map((row, idx) => {
       const ts = Date.now();
@@ -24,14 +26,20 @@ export class DebateOrchestrator {
         { agentId: AgentRole.MODEL_B, content: row.b.answer, timestamp: ts },
       ];
 
-      // Phase-local copy only: pinning debate_final_summary on the last accordion row made the UI
-      // falsely claim "no consensus" even when expert bodies clearly agreed paragraph-for-paragraph.
-      const summary =
-        idx === 0
-          ? 'Independent expert outputs.'
-          : idx === hist.length - 1
-            ? 'Final expert replies forwarded to arbiter verdict.'
-            : 'Cross-examination between experts.';
+      let summary: string;
+      if (row.round === 0) {
+        summary = 'Independent expert outputs — no cross-examination yet.';
+      } else if (consensusRound !== null && row.round === consensusRound) {
+        // This is the round where consensus was detected → terminal round
+        summary = payload.debate_result.post_debate_semantic_consensus
+          ? `⚑ Consensus reached in round ${row.round} (semantic agreement confirmed by judge — same conclusion, different phrasing).`
+          : `⚑ Consensus reached in round ${row.round} (exact agreement).`;
+      } else if (idx === totalRounds - 1 && consensusRound === null) {
+        // Last round, no consensus → judge arbitrates
+        summary = `Final debate round. No consensus reached — arbiter judge will produce the definitive answer.`;
+      } else {
+        summary = `Cross-examination round ${row.round} — experts refining positions.`;
+      }
 
       return {
         roundNumber: row.round + 1,
@@ -43,15 +51,28 @@ export class DebateOrchestrator {
 
   private mapFinalConsensus(payload: DebatePipelinePayload): FinalConsensus {
     const j = payload.judge_result ?? ({} as DebatePipelinePayload['judge_result']);
+    const dr = payload.debate_result;
     const line = `${payload.models.model_a} vs ${payload.models.model_b}; judge ${payload.models.model_judge}`;
+
+    // Build a human-readable termination description
+    let terminationDesc: string;
+    if (dr.consensus_round === 0) {
+      terminationDesc = dr.post_debate_semantic_consensus
+        ? 'Consensus at Round 0 (semantic match — judge confirmed same conclusion before debate began).'
+        : 'Consensus at Round 0 (exact agreement before debate was needed).';
+    } else if (dr.consensus_round !== null) {
+      terminationDesc = dr.post_debate_semantic_consensus
+        ? `Consensus at Round ${dr.consensus_round} (semantic match — judge confirmed same substantive conclusion).`
+        : `Consensus at Round ${dr.consensus_round} (exact agreement reached during debate).`;
+    } else {
+      terminationDesc = `No consensus after ${payload.debate_rounds} rounds — judge arbitrated.`;
+    }
+
     const bits = [
       line,
-      `Debate consensus: ${payload.debate_result.consensus}`,
-      payload.debate_result.post_debate_semantic_consensus
-        ? 'Substantive convergence confirmed by judge after debate (answers were not identical as raw text).'
-        : null,
-      j.decision_type ? `Judge: ${j.decision_type}` : null,
-      j.winner != null && String(j.winner).length ? `Winner: ${j.winner}` : null,
+      terminationDesc,
+      j.decision_type ? `Judge decision: ${j.decision_type}` : null,
+      j.winner != null && String(j.winner).length ? `Supporting: ${j.winner}` : null,
       j.reason ? String(j.reason) : null,
     ].filter(Boolean) as string[];
 

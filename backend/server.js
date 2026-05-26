@@ -301,8 +301,12 @@ async function runTwoLlmJudgeDebate(question) {
       'Semantic agreement after round 0: judge confirmed same substantive conclusion despite different wording.';
   }
 
+  // Track which round consensus was detected (0 = initial, null = none after all rounds)
+  let consensusRound = initConsensus ? 0 : null;
+
   if (!initConsensus) {
     for (let r = 1; r <= DEBATE_ROUNDS; r++) {
+      // --- Expert A responds ---
       try {
         const promptA = buildDebatePromptTwo(
           question,
@@ -317,13 +321,16 @@ async function runTwoLlmJudgeDebate(question) {
         curA = { answer: `Error: ${e.message}` };
       }
 
+      // Text consensus check after A speaks
       if (checkConsensusTwo(curA.answer, curB.answer)) {
         debateConsensus = true;
-        debateFinalSummary = `Consensus reached after Expert A spoke in round ${r}.`;
+        debateFinalSummary = `Consensus reached after Expert A spoke in round ${r} (exact text match).`;
+        consensusRound = r;
         history.push({ round: r, a: { ...curA }, b: { ...curB } });
         break;
       }
 
+      // --- Expert B responds ---
       try {
         const promptB = buildDebatePromptTwo(
           question,
@@ -338,35 +345,59 @@ async function runTwoLlmJudgeDebate(question) {
         curB = { answer: `Error: ${e.message}` };
       }
 
+      // Text consensus check after B speaks
       if (checkConsensusTwo(curA.answer, curB.answer)) {
         debateConsensus = true;
-        debateFinalSummary = `Consensus reached after Expert B spoke in round ${r}.`;
+        debateFinalSummary = `Consensus reached after Expert B spoke in round ${r} (exact text match).`;
+        consensusRound = r;
         history.push({ round: r, a: { ...curA }, b: { ...curB } });
         break;
       }
 
+      // Record this round before doing the semantic check
       history.push({ round: r, a: { ...curA }, b: { ...curB } });
+
+      // --- Judge semantic consensus check after every full round ---
+      // This catches cases where models agree substantively but use different phrasing.
+      console.log(`[round ${r}] Text consensus not found. Asking judge for semantic check...`);
+      const roundSemanticMatch = await semanticConsensusViaJudge(question, curA.answer, curB.answer);
+      if (roundSemanticMatch) {
+        debateConsensus = true;
+        debateFinalSummary = `Semantic consensus confirmed by judge after round ${r}: experts reached the same substantive conclusion despite different phrasing.`;
+        consensusRound = r;
+        postDebateSemanticConsensusApplied = true;
+        console.log(`[round ${r}] Judge confirmed semantic consensus. Terminating debate early.`);
+        break;
+      }
+
+      console.log(`[round ${r}] No consensus. ${r < DEBATE_ROUNDS ? 'Continuing to next round.' : 'All rounds exhausted.'}`);
 
       if (r === DEBATE_ROUNDS) {
         debateConsensus = false;
         debateFailed = true;
         failureReason = 'two_way_disagree';
-        debateFinalSummary = `No consensus after ${DEBATE_ROUNDS} debate rounds.`;
+        debateFinalSummary = `No consensus after ${DEBATE_ROUNDS} debate rounds. Judge will arbitrate.`;
       }
     }
   }
 
-  // Verbose prose often hides agreement: if strict text never matched across debate rounds but both
-  // conclusions align (e.g. same MCQ option buried in paragraphs), reconcile once via the judge model.
+  // Safety net: if all rounds completed without consensus, do one final semantic check.
+  // (Per-round checks above already catch most cases; this handles the edge case where
+  // the last round's per-round check didn't fire due to the loop ending before it ran.)
   if (!debateConsensus && history.length > 1) {
+    console.log('[post-loop] Performing final semantic consensus check...');
     const substantiveMatch = await semanticConsensusViaJudge(question, curA.answer, curB.answer);
     if (substantiveMatch) {
       debateConsensus = true;
       debateFailed = false;
       failureReason = null;
       postDebateSemanticConsensusApplied = true;
+      consensusRound = history.length - 1; // last recorded round
       debateFinalSummary =
-        'Substantive agreement after debate verified by semantic review before final arbitration.';
+        'Substantive agreement confirmed by final semantic review. Judge will formalize the consensus.';
+      console.log('[post-loop] Final semantic check found consensus.');
+    } else {
+      console.log('[post-loop] Final semantic check: no consensus. Judge will arbitrate.');
     }
   }
 
@@ -439,6 +470,7 @@ async function runTwoLlmJudgeDebate(question) {
     failed: debateFailed,
     failure_reason: failureReason,
     consensus: debateConsensus,
+    consensus_round: consensusRound,          // which round consensus was found (0 = initial, null = none)
     initial_choices: { a: initialRound.a.answer, b: initialRound.b.answer },
     debate_history: history,
     debate_final_summary: debateFinalSummary,
