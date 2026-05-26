@@ -9,7 +9,7 @@ const steps = [
     id: 'welcome',
     tag: 'Welcome to Arbiter',
     headline: 'AI that argues its way to the truth.',
-    body: 'Arbiter is a multi-agent debate system. Instead of trusting a single AI answer, it pits specialised large language models against each other in a structured debate — then passes the result to an impartial judge for a final, verified answer.',
+    body: 'Arbiter is a multi-agent debate system. Instead of trusting a single AI answer, it pits specialised large language models against each other in a structured debate, then passes the result to an impartial judge for a final, verified answer.',
     visual: (
       <div className="flex items-center justify-center gap-4 py-6">
         {[
@@ -45,7 +45,7 @@ const steps = [
     id: 'why',
     tag: 'The Problem',
     headline: 'Single models have blind spots.',
-    body: 'Every LLM carries inherent biases and gaps. A single model confidently giving one answer has no mechanism to self-correct. Arbiter solves this by making models challenge each other — surfacing weaknesses, sharpening reasoning, and producing more trustworthy outputs.',
+    body: 'Every LLM carries inherent biases and gaps. A single model confidently giving one answer has no mechanism to self-correct. Arbiter solves this by making models challenge each other, surfacing weaknesses, sharpening reasoning, and producing more trustworthy outputs.',
     visual: (
       <div className="grid grid-cols-2 gap-3 py-4">
         {[
@@ -69,7 +69,7 @@ const steps = [
     id: 'models',
     tag: 'The Models',
     headline: 'Three specialised AI agents.',
-    body: 'Arbiter uses two expert debaters and one impartial judge, each a distinct open-source LLM running locally via Ollama — no data leaves your machine.',
+    body: 'Arbiter uses two expert debaters and one impartial judge, each a distinct open-source LLM running locally via Ollama, no data leaves your machine.',
     visual: (
       <div className="flex flex-col gap-3 py-4">
         {[
@@ -132,7 +132,7 @@ const steps = [
     id: 'judge',
     tag: 'The Judge Layer',
     headline: 'An impartial third model has the final say.',
-    body: 'After debate, the judge reviews both experts\' initial and final answers, the debate outcome, and all reasoning. It can confirm consensus, break ties, or override a weak conclusion — producing a single verified answer with a confidence score and decision rationale.',
+    body: 'After debate, the judge reviews both experts\' initial and final answers, the debate outcome, and all reasoning. It can confirm consensus, break ties, or override a weak conclusion : producing a single verified answer with a confidence score and decision rationale.',
     visual: (
       <div className="py-4 space-y-3">
         <div className="bg-base-panel border border-base-divider rounded-lg p-3 text-xs text-slate-custom">
