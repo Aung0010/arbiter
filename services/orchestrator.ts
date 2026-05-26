@@ -29,37 +29,27 @@ export class DebateOrchestrator {
   }
 
   private mapFinalConsensus(payload: DebatePipelinePayload): FinalConsensus {
-    const j = payload.judge_result ?? ({} as DebatePipelinePayload['judge_result']);
     const dr = payload.debate_result;
-    const line = `${payload.models.model_a} vs ${payload.models.model_b}; judge ${payload.models.model_judge}`;
-
     const semanticsFlag = judgeSemanticsMatchedConsensus(dr);
 
-    let terminationDesc: string;
-    if (dr.consensus_round === 0) {
-      terminationDesc = semanticsFlag
-        ? 'Consensus at Round 0 (semantic match — judge confirmed same conclusion before debate began).'
-        : 'Consensus at Round 0 (exact agreement before debate was needed).';
-    } else if (dr.consensus_round !== null) {
-      terminationDesc = semanticsFlag
-        ? `Consensus at Round ${dr.consensus_round} (semantic match — judge confirmed same substantive conclusion).`
-        : `Consensus at Round ${dr.consensus_round} (exact agreement reached during debate).`;
+    let reasoning: string;
+    if (!dr.consensus) {
+      reasoning = 'Experts did not converge; the arbiter synthesized the final answer below.';
+    } else if (dr.consensus_round === 0) {
+      reasoning = semanticsFlag
+        ? 'Agreement before debate — arbiter confirmed experts matched in substance.'
+        : 'Agreement before debate — experts matched without cross-examination.';
+    } else if (dr.consensus_round != null) {
+      reasoning = semanticsFlag
+        ? `Agreement after round ${dr.consensus_round} — arbiter confirmed matching conclusions.`
+        : `Agreement after round ${dr.consensus_round}.`;
     } else {
-      terminationDesc = `No consensus after ${payload.debate_rounds} rounds — judge arbitrated.`;
+      reasoning = 'Experts aligned; arbiter confirmed the outcome below.';
     }
 
-    const bits = [
-      line,
-      `Structured consensus flag: ${dr.consensus}`,
-      terminationDesc,
-      j.decision_type ? `Judge decision: ${j.decision_type}` : null,
-      j.winner != null && String(j.winner).length ? `Supporting: ${j.winner}` : null,
-      j.reason ? String(j.reason) : null,
-    ].filter(Boolean) as string[];
-
     return {
-      answer: (j.final_answer && j.final_answer.trim()) || '',
-      reasoning: bits.join(' · '),
+      answer: (payload.judge_result?.final_answer && String(payload.judge_result.final_answer).trim()) || '',
+      reasoning,
       participatingAgents: [AgentRole.MODEL_A, AgentRole.MODEL_B, AgentRole.MODEL_C],
       participantSummary: 'Experts · Arbiter Judge',
     };
