@@ -74,10 +74,10 @@ function checkConsensusTwo(aAnswer, bAnswer) {
 }
 
 /**
- * When strict string equality fails, ask the judge model whether both round-0
- * answers convey the same substantive conclusion (same number, option, advice, etc.).
+ * Ask the judge model whether two expert answers agree on the substantive conclusion
+ * (used after round 0 and after each completed debate round where text matching failed).
  */
-function buildRoundZeroSemanticConsensusPrompt(question, answerA, answerB) {
+function buildPairwiseSemanticConsensusPrompt(question, answerA, answerB) {
   return `You arbitrate whether two independent expert answers agree on the substance of the user's question.
 
 [Question]
@@ -104,7 +104,7 @@ async function semanticConsensusViaJudge(question, answerA, answerB) {
   try {
     const raw = await callOllama(
       MODEL_JUDGE,
-      buildRoundZeroSemanticConsensusPrompt(question, answerA, answerB)
+      buildPairwiseSemanticConsensusPrompt(question, answerA, answerB)
     );
     const parsed = extractJsonFromText(raw);
     if (!parsed) return false;
@@ -290,6 +290,7 @@ async function runTwoLlmJudgeDebate(question) {
   let debateFailed = false;
   let failureReason = null;
   let postDebateSemanticConsensusApplied = false;
+  let midDebateJudgeConsensusRound = null;
   let debateFinalSummary;
   if (!initConsensus) {
     debateFinalSummary = 'Experts disagreed after round 0.';
@@ -347,11 +348,25 @@ async function runTwoLlmJudgeDebate(question) {
 
       history.push({ round: r, a: { ...curA }, b: { ...curB } });
 
+      const judgeAfterRound = await semanticConsensusViaJudge(
+        question,
+        curA.answer,
+        curB.answer
+      );
+      if (judgeAfterRound) {
+        debateConsensus = true;
+        debateFailed = false;
+        failureReason = null;
+        midDebateJudgeConsensusRound = r;
+        debateFinalSummary = `Substantive agreement confirmed by judge after debate round ${r}.`;
+        break;
+      }
+
       if (r === DEBATE_ROUNDS) {
         debateConsensus = false;
         debateFailed = true;
         failureReason = 'two_way_disagree';
-        debateFinalSummary = `No consensus after ${DEBATE_ROUNDS} debate rounds.`;
+        debateFinalSummary = `No consensus after ${DEBATE_ROUNDS} debate rounds (text and judge review each round).`;
       }
     }
   }
@@ -448,6 +463,7 @@ async function runTwoLlmJudgeDebate(question) {
         ? 'normalized_text'
         : 'judge_semantic',
     post_debate_semantic_consensus: postDebateSemanticConsensusApplied,
+    mid_debate_judge_consensus_round: midDebateJudgeConsensusRound,
   };
 
   return {

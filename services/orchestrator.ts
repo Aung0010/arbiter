@@ -50,6 +50,9 @@ export class DebateOrchestrator {
       payload.debate_result.post_debate_semantic_consensus
         ? 'Substantive convergence confirmed by judge after debate (answers were not identical as raw text).'
         : null,
+      payload.debate_result.mid_debate_judge_consensus_round != null
+        ? `Judge substantive consensus after debate round ${payload.debate_result.mid_debate_judge_consensus_round}.`
+        : null,
       j.decision_type ? `Judge: ${j.decision_type}` : null,
       j.winner != null && String(j.winner).length ? `Winner: ${j.winner}` : null,
       j.reason ? String(j.reason) : null,

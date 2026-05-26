@@ -40,8 +40,10 @@ export interface DebatePipelinePayload {
     failure_reason: string | null;
     consensus: boolean;
     debate_final_summary: string;
-    /** True when substantive agreement only detected after debate via semanticConsensusViaJudge. */
+    /** True when loop ended with one more semanticConsensusViaJudge after all rounds. */
     post_debate_semantic_consensus?: boolean;
+    /** Debate round index (1..N) where judge substantive check ended debate early; null otherwise. */
+    mid_debate_judge_consensus_round?: number | null;
   };
   judge_result: {
     final_answer: string;
