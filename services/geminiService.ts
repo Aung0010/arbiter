@@ -39,11 +39,14 @@ export interface DebatePipelinePayload {
     failed: boolean;
     failure_reason: string | null;
     consensus: boolean;
+    /** Which round consensus was detected: 0 = initial (before debate), 1-N = debate round, null = no consensus */
+    consensus_round: number | null;
     debate_final_summary: string;
     /** True when loop ended with one more semanticConsensusViaJudge after all rounds. */
     post_debate_semantic_consensus?: boolean;
     /** Debate round index (1..N) where judge substantive check ended debate early; null otherwise. */
     mid_debate_judge_consensus_round?: number | null;
+    round_zero_consensus_source?: 'none' | 'normalized_text' | 'judge_semantic';
   };
   judge_result: {
     final_answer: string;
