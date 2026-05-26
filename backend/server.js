@@ -268,7 +268,13 @@ async function runInitialTwo(question) {
  * Two-LLM debate + mandatory judge (same flow as conduct_debate_two + judge_finalize_two).
  * Debate may end early on consensus; judge always produces the system final answer.
  */
-async function runTwoLlmJudgeDebate(question) {
+/**
+ * @param {string} question
+ * @param {((row: {round:number, a:{answer:string}, b:{answer:string}}) => void) | null} onRound
+ *   Called immediately after each debate round row is recorded so callers can stream
+ *   results progressively. Receives the raw history row (same shape as debate_history entries).
+ */
+async function runTwoLlmJudgeDebate(question, onRound = null) {
   const initial = await runInitialTwo(question);
   let curA = initial.a;
   let curB = initial.b;
@@ -284,7 +290,10 @@ async function runTwoLlmJudgeDebate(question) {
   }
   const initConsensus = textConsensus || judgeRoundZeroConsensus;
 
-  const history = [{ round: 0, a: { ...curA }, b: { ...curB } }];
+  const initRow = { round: 0, a: { ...curA }, b: { ...curB } };
+  const history = [initRow];
+  // Stream round 0 immediately — both experts gave their independent initial answers.
+  if (onRound) onRound(initRow);
 
   let debateConsensus = initConsensus;
   let debateFailed = false;
@@ -327,7 +336,9 @@ async function runTwoLlmJudgeDebate(question) {
         debateConsensus = true;
         debateFinalSummary = `Consensus reached after Expert A spoke in round ${r} (exact text match).`;
         consensusRound = r;
-        history.push({ round: r, a: { ...curA }, b: { ...curB } });
+        const rowA = { round: r, a: { ...curA }, b: { ...curB } };
+        history.push(rowA);
+        if (onRound) onRound(rowA);
         break;
       }
 
@@ -351,12 +362,16 @@ async function runTwoLlmJudgeDebate(question) {
         debateConsensus = true;
         debateFinalSummary = `Consensus reached after Expert B spoke in round ${r} (exact text match).`;
         consensusRound = r;
-        history.push({ round: r, a: { ...curA }, b: { ...curB } });
+        const rowB = { round: r, a: { ...curA }, b: { ...curB } };
+        history.push(rowB);
+        if (onRound) onRound(rowB);
         break;
       }
 
-      // Record this round before doing the semantic check
-      history.push({ round: r, a: { ...curA }, b: { ...curB } });
+      // Record this round before doing the semantic check, then stream it.
+      const row = { round: r, a: { ...curA }, b: { ...curB } };
+      history.push(row);
+      if (onRound) onRound(row);
 
       // Judge semantic consensus after each full debate round (both experts have spoken).
       console.log(`[round ${r}] Text consensus not found. Asking judge for semantic check...`);
@@ -516,7 +531,7 @@ app.post('/api/chat/model-a', (req, res) => handleChatModel(req, res, MODEL_A));
 app.post('/api/chat/model-b', (req, res) => handleChatModel(req, res, MODEL_B));
 app.post('/api/chat/model-judge', (req, res) => handleChatModel(req, res, MODEL_JUDGE));
 
-// 2-LLM debate + mandatory judge (replaces legacy 3-model MCC debate)
+// 2-LLM debate + mandatory judge — blocking, returns full payload at once.
 app.post('/api/chat/debate', async (req, res) => {
   try {
     const parsed = requireQuestion(req.body);
@@ -526,6 +541,54 @@ app.post('/api/chat/debate', async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ status: 'error', message: e.message || 'Debate failed' });
+  }
+});
+
+/**
+ * SSE streaming debate endpoint.
+ * Sends 'round' events as each debate round completes, then a 'complete' event
+ * with the full result payload once the judge has produced its verdict.
+ *
+ * Event format (text/event-stream):
+ *   event: round
+ *   data: {"round":0,"a":{"answer":"..."},"b":{"answer":"..."}}
+ *
+ *   event: complete
+ *   data: {"status":"success", ...full DebatePipelinePayload}
+ *
+ *   event: error
+ *   data: {"message":"..."}
+ */
+app.post('/api/chat/debate/stream', async (req, res) => {
+  const parsed = requireQuestion(req.body);
+  if (parsed.error) {
+    return res.status(400).json({ status: 'error', message: parsed.error });
+  }
+
+  // SSE headers — disable all buffering so events arrive immediately.
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // disable nginx proxy buffering
+  res.flushHeaders();
+
+  const sendEvent = (eventName, data) => {
+    res.write(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`);
+    // Flush if the response supports it (some Node/Express versions expose this).
+    if (typeof res.flush === 'function') res.flush();
+  };
+
+  try {
+    const result = await runTwoLlmJudgeDebate(
+      parsed.question,
+      (row) => sendEvent('round', row)   // fires after every debate round
+    );
+    sendEvent('complete', { status: 'success', ...result });
+  } catch (e) {
+    console.error('[stream] Debate failed:', e);
+    sendEvent('error', { message: e.message || 'Debate failed' });
+  } finally {
+    res.end();
   }
 });
 
@@ -546,6 +609,6 @@ app.listen(PORT, () => {
   console.log(`  Model A: ${MODEL_A}`);
   console.log(`  Model B: ${MODEL_B}`);
   console.log(`  Judge:   ${MODEL_JUDGE}`);
-  console.log('  POST /api/chat/model-a | /api/chat/model-b | /api/chat/model-judge | /api/chat/debate');
+  console.log('  POST /api/chat/model-a | /api/chat/model-b | /api/chat/model-judge | /api/chat/debate | /api/chat/debate/stream (SSE)');
   console.log('  GET  /api/health');
 });

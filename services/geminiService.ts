@@ -67,6 +67,86 @@ export async function fetchDebatePipeline(question: string): Promise<DebatePipel
   return data;
 }
 
+/**
+ * Streaming version of the debate pipeline via SSE.
+ * `onRound` fires as soon as each debate round completes (round 0 = initial, 1-N = debate turns).
+ * `onComplete` fires once with the full payload after the judge verdict is ready.
+ *
+ * Rejects on network errors or if the server sends an `error` event.
+ */
+export async function streamDebatePipeline(
+  question: string,
+  onRound: (row: DebateHistoryRow, roundIndex: number) => void,
+  onComplete: (payload: DebatePipelinePayload) => void,
+): Promise<void> {
+  const url = `${BACKEND_ORIGIN}/api/chat/debate/stream`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Backend /api/chat/debate/stream returned ${res.status}: ${text.slice(0, 400)}`);
+  }
+
+  if (!res.body) {
+    throw new Error('Streaming response body is null — browser may not support ReadableStream.');
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let roundIndex = 0;
+
+  // SSE lines are separated by \n\n (event blocks).
+  // Each block has: "event: <name>\ndata: <json>\n"
+  const processBuffer = () => {
+    const blocks = buffer.split('\n\n');
+    // The last element may be an incomplete block — keep it in the buffer.
+    buffer = blocks.pop() ?? '';
+
+    for (const block of blocks) {
+      if (!block.trim()) continue;
+      const lines = block.split('\n');
+      let eventName = 'message';
+      let dataLine = '';
+
+      for (const line of lines) {
+        if (line.startsWith('event: ')) eventName = line.slice('event: '.length).trim();
+        else if (line.startsWith('data: ')) dataLine = line.slice('data: '.length).trim();
+      }
+
+      if (!dataLine) continue;
+
+      try {
+        const parsed = JSON.parse(dataLine);
+        if (eventName === 'round') {
+          onRound(parsed as DebateHistoryRow, roundIndex++);
+        } else if (eventName === 'complete') {
+          onComplete(parsed as DebatePipelinePayload);
+        } else if (eventName === 'error') {
+          throw new Error(`Server error: ${parsed.message ?? 'unknown'}`);
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message.startsWith('Server error:')) throw e;
+        console.warn('[streamDebatePipeline] Failed to parse SSE block:', block, e);
+      }
+    }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    processBuffer();
+  }
+  // Flush any remaining bytes
+  buffer += decoder.decode();
+  processBuffer();
+}
+
 /** GET /api/health — aligns with Jimmy backend route. */
 export const checkBackendHealth = async (): Promise<{
   ok: boolean;
