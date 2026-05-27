@@ -1,9 +1,11 @@
-// Agent role identifiers match the backend model slot keys (model_a / model_b / model_c).
+// Agent role identifiers mapped to match the Supabase DB CHECK constraints.
 // Display names are handled in AgentBadge.tsx.
 export enum AgentRole {
-  MODEL_A = 'model_a',
-  MODEL_B = 'model_b',
-  MODEL_C = 'model_c',
+  MODEL_A = 'expert_a', // Maps to DB expert_a
+  MODEL_B = 'expert_b', // Maps to DB expert_b
+  MODEL_C = 'judge',    // Maps to DB judge
+  USER = 'user',        // Added for message storage
+  SYSTEM = 'system'     // Added for message storage
 }
 
 export interface AgentResponse {
@@ -29,17 +31,19 @@ export interface FinalConsensus {
 
 export interface ChatSession {
   id: string;
+  user_id?: string;     // Added: Maps to Supabase auth.users
   title: string;
   timestamp: number;
   rounds: DebateRound[];
   finalResult: FinalConsensus | null;
   userPrompt: string;
+  followUpCount: number; // Added: Tracks session length
 }
 
 export interface BackendHealth {
   ok: boolean;
   configured: Record<string, string>;  // { model_a: 'gemma3:12b', ... }
-  available: string[];                  // Ollama model names currently loaded
+  available: string[];                 // Ollama model names currently loaded
 }
 
 export interface Feedback {
