@@ -40,7 +40,7 @@ const App: React.FC = () => {
   const [sessions, setSessions] = useState<UIChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingSessionId, setProcessingSessionId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(
     () => localStorage.getItem('arbiter_onboarding_done') !== 'true'
@@ -49,6 +49,13 @@ const App: React.FC = () => {
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const savedAgentMessageKeysRef = useRef<Set<string>>(new Set());
+
+  const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
+
+  // One global processing lock, but UI only shows loading for the processing chat.
+  const isProcessing = processingSessionId !== null;
+  const isCurrentSessionProcessing =
+    !!activeSession && activeSession.id === processingSessionId;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -72,8 +79,6 @@ const App: React.FC = () => {
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [prompt]);
-
-  const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -327,33 +332,33 @@ const App: React.FC = () => {
   };
 
   const handleRenameSession = async (id: string, title: string) => {
-  setSessions((prev) =>
-    prev.map((s) =>
-      s.id === id
-        ? {
-            ...s,
-            title,
-          }
-        : s
-    )
-  );
+    setSessions((prev) =>
+      prev.map((s) =>
+        s.id === id
+          ? {
+              ...s,
+              title,
+            }
+          : s
+      )
+    );
 
-  if (session?.user) {
-    const { error } = await supabase
-      .from('sessions')
-      .update({
-        title,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .eq('user_id', session.user.id);
+    if (session?.user) {
+      const { error } = await supabase
+        .from('sessions')
+        .update({
+          title,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .eq('user_id', session.user.id);
 
-    if (error) {
-      console.error('Failed to rename session:', error);
-      alert(error.message);
+      if (error) {
+        console.error('Failed to rename session:', error);
+        alert(error.message);
+      }
     }
-  }
-};
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -465,7 +470,6 @@ const App: React.FC = () => {
 
     const userQuery = prompt.trim();
     setPrompt('');
-    setIsProcessing(true);
 
     let currentSessionId = isValidUuid(activeSessionId) ? activeSessionId : null;
     let currentTurnNumber = 1;
@@ -509,8 +513,10 @@ const App: React.FC = () => {
 
         setSessions((prev) => [newSession, ...prev]);
         setActiveSessionId(createdSession.id);
+        setProcessingSessionId(createdSession.id);
       } else {
         currentTurnNumber = await getNextTurnNumberFromDb(currentSessionId);
+        setProcessingSessionId(currentSessionId);
 
         updateSession(currentSessionId, {
           rounds: [],
@@ -582,7 +588,7 @@ const App: React.FC = () => {
       console.error(error);
       alert('An error occurred during the debate process.');
     } finally {
-      setIsProcessing(false);
+      setProcessingSessionId(null);
       scrollToBottom();
     }
   };
@@ -618,7 +624,6 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-base-DEFAULT overflow-hidden font-sans text-slate-custom">
-
       {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
 
       {showAuth && !session && !showOnboarding && (
@@ -646,18 +651,18 @@ const App: React.FC = () => {
       )}
 
       <Sidebar
-      sessions={sessions}
-      activeSessionId={activeSessionId}
-      userEmail={session?.user?.email}
-      onSignOut={handleSignOut}
-      onDeleteSession={handleDeleteSession}
-      onRenameSession={handleRenameSession}
-      onSelectSession={handleSelectSession}
-      onNewChat={handleNewChat}
-      isOpen={isSidebarOpen}
-      toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-      onShowTour={() => setShowOnboarding(true)}
-    />
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        userEmail={session?.user?.email}
+        onSignOut={handleSignOut}
+        onDeleteSession={handleDeleteSession}
+        onRenameSession={handleRenameSession}
+        onSelectSession={handleSelectSession}
+        onNewChat={handleNewChat}
+        isOpen={isSidebarOpen}
+        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        onShowTour={() => setShowOnboarding(true)}
+      />
 
       <div className="flex-1 flex flex-col h-full relative">
         <div className="md:hidden bg-base-panel border-b border-base-divider p-4 flex items-center justify-between z-10">
@@ -679,19 +684,26 @@ const App: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                 </div>
-                <h1 className="text-3xl font-semibold text-brand-navy tracking-tight">Arbiter Console</h1>
+
+                <h1 className="text-3xl font-semibold text-brand-navy tracking-tight">
+                  Arbiter Console
+                </h1>
+
                 <p className="text-base text-slate-custom max-w-md">
                   A multi-agent consensus protocol incorporating structured logical, creative, and critical analysis.
                 </p>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl mt-8">
                   <div className="p-4 bg-layer-white border border-base-divider rounded shadow-sm text-sm text-slate-custom text-left">
                     <span className="font-medium text-brand-navy block mb-1">Evaluate Frameworks</span>
                     "Compare Python vs Go for backend..."
                   </div>
+
                   <div className="p-4 bg-layer-white border border-base-divider rounded shadow-sm text-sm text-slate-custom text-left">
                     <span className="font-medium text-brand-navy block mb-1">Abstract Concepts</span>
                     "Explain quantum entanglement simply..."
                   </div>
+
                   <div className="p-4 bg-layer-white border border-base-divider rounded shadow-sm text-sm text-slate-custom text-left">
                     <span className="font-medium text-brand-navy block mb-1">Risk Assessment</span>
                     "Draft a sensitive email to a client..."
@@ -732,7 +744,7 @@ const App: React.FC = () => {
                             turn.turnNumber === latestTurnNumber &&
                             idx === turn.rounds.length - 1 &&
                             !turn.finalMessage &&
-                            isProcessing
+                            isCurrentSessionProcessing
                           }
                         />
                       ))}
@@ -750,12 +762,16 @@ const App: React.FC = () => {
                   ))
                 ) : (
                   <div className="bg-layer-white border border-base-divider rounded p-6 mb-8 shadow-sm">
-                    <h2 className="text-xs font-semibold text-brand-navy uppercase tracking-wider mb-2">User Query</h2>
-                    <p className="text-base text-slate-custom font-medium">{activeSession.userPrompt}</p>
+                    <h2 className="text-xs font-semibold text-brand-navy uppercase tracking-wider mb-2">
+                      User Query
+                    </h2>
+                    <p className="text-base text-slate-custom font-medium">
+                      {activeSession.userPrompt}
+                    </p>
                   </div>
                 )}
 
-                {isProcessing && (
+                {isCurrentSessionProcessing && (
                   <div className="flex items-center justify-center p-8 bg-layer-white border border-base-divider rounded shadow-sm">
                     <div className="flex space-x-2 animate-pulse">
                       <div className="w-2 h-2 bg-brand-azure rounded-sm"></div>
@@ -778,7 +794,9 @@ const App: React.FC = () => {
           <div className="max-w-4xl mx-auto relative">
             {activeSession && activeSession.followUpCount >= 5 ? (
               <div className="flex flex-col items-center justify-center py-5 px-4 bg-layer-white border border-base-divider rounded-xl text-center shadow-sm">
-                <span className="text-sm font-semibold text-brand-navy mb-1">Session Limit Reached</span>
+                <span className="text-sm font-semibold text-brand-navy mb-1">
+                  Session Limit Reached
+                </span>
                 <span className="text-xs text-slate-custom mb-4">
                   To maintain optimal agent performance and context limits, please start a new execution.
                 </span>
@@ -808,12 +826,13 @@ const App: React.FC = () => {
                   disabled={isProcessing || !session || showOnboarding || showAuth}
                   className="w-full pl-4 pr-14 py-3 bg-layer-white border border-base-divider rounded text-slate-custom placeholder-slate-400 focus:outline-none focus:border-brand-azure shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm resize-none max-h-64 overflow-y-auto"
                 />
+
                 <button
                   type="submit"
                   disabled={!prompt.trim() || isProcessing || !session}
                   className="absolute right-2 bottom-2 h-9 w-9 bg-brand-navy hover:brightness-110 text-core-inverse rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center p-2"
                 >
-                  {isProcessing ? (
+                  {isCurrentSessionProcessing ? (
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
