@@ -35,6 +35,25 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onClose }) => {
 
   const resetMessage = () => setMessage('');
 
+  const isAlreadyRegisteredError = (errorMessage?: string) => {
+    if (!errorMessage) return false;
+
+    const normalizedMessage = errorMessage.toLowerCase();
+
+    return (
+      normalizedMessage.includes('already registered') ||
+      normalizedMessage.includes('already exists') ||
+      normalizedMessage.includes('user already') ||
+      normalizedMessage.includes('email already')
+    );
+  };
+
+  const showAlreadySignedUpMessage = () => {
+    setMode('login');
+    setOtp('');
+    setMessage('You have already signed up. Please login.');
+  };
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     resetMessage();
@@ -46,20 +65,49 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onClose }) => {
 
     setLoading(true);
 
-    const { error } = isSignup
-      ? await supabase.auth.signUp({ email, password })
-      : await supabase.auth.signInWithPassword({ email, password });
+    if (isSignup) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      setLoading(false);
+
+      if (error) {
+        if (isAlreadyRegisteredError(error.message)) {
+          showAlreadySignedUpMessage();
+          return;
+        }
+
+        setMessage(error.message);
+        return;
+      }
+
+      /*
+        Supabase sometimes returns a user with an empty identities array
+        when the email is already registered, depending on project settings.
+      */
+      const identities = data.user?.identities;
+
+      if (Array.isArray(identities) && identities.length === 0) {
+        showAlreadySignedUpMessage();
+        return;
+      }
+
+      setMode('otp');
+      setMessage('We sent a 6-digit verification code to your email.');
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     setLoading(false);
 
     if (error) {
       setMessage(error.message);
-      return;
-    }
-
-    if (isSignup) {
-      setMode('otp');
-      setMessage('We sent a 6-digit verification code to your email.');
       return;
     }
 
@@ -105,6 +153,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onClose }) => {
     setLoading(false);
 
     if (error) {
+      if (isAlreadyRegisteredError(error.message)) {
+        showAlreadySignedUpMessage();
+        return;
+      }
+
       setMessage(error.message);
       return;
     }
@@ -164,7 +217,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onClose }) => {
                 required
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setMessage('');
+                }}
                 className="w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-black focus:ring-2 focus:ring-black/10"
               />
             </div>
@@ -176,7 +232,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onClose }) => {
                 required
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setMessage('');
+                }}
                 className="w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-black focus:ring-2 focus:ring-black/10"
               />
 
@@ -192,7 +251,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onClose }) => {
             </div>
 
             {message && (
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm ${
+                  message === 'You have already signed up. Please login.'
+                    ? 'border-blue-200 bg-blue-50 text-blue-700'
+                    : 'border-zinc-200 bg-zinc-50 text-zinc-700'
+                }`}
+              >
                 {message}
               </div>
             )}
@@ -215,7 +280,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onClose }) => {
                 maxLength={6}
                 placeholder="000000"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onChange={(e) => {
+                  setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                  setMessage('');
+                }}
                 className="w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-center text-2xl font-semibold tracking-[0.45em] outline-none transition focus:border-black focus:ring-2 focus:ring-black/10"
               />
             </div>
@@ -253,6 +321,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onClose }) => {
               onClick={() => {
                 setMode(isSignup ? 'login' : 'signup');
                 setMessage('');
+                setOtp('');
               }}
               className="font-semibold text-black hover:underline"
             >
