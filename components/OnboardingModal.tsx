@@ -257,9 +257,10 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete }) => {
             Back
           </button>
           <span className="text-xs text-slate-custom">{step + 1} / {steps.length}</span>
+          
           <button
             onClick={() => isLast ? onComplete() : setStep(s => s + 1)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-brand-navy hover:brightness-110 text-white text-sm font-medium rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 bg-black hover:bg-zinc-800 text-white text-sm font-medium rounded-lg transition-colors"
           >
             {isLast ? 'Launch Console' : 'Next'}
             {!isLast && (
