@@ -665,9 +665,9 @@ const App: React.FC = () => {
         onShowTour={() => setShowOnboarding(true)}
       />
 
-      <div className="flex-1 flex flex-col h-full relative">
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Mobile top bar */}
-        <div className="md:hidden bg-canvas-soft border-b border-hairline px-4 py-3.5 flex items-center justify-between z-10">
+        <div className="md:hidden bg-canvas-soft border-b border-hairline px-4 py-3.5 flex items-center justify-between z-10 flex-shrink-0">
           <button onClick={() => setIsSidebarOpen(true)} className="text-muted hover:text-ink transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
@@ -677,152 +677,29 @@ const App: React.FC = () => {
           <div className="w-5" />
         </div>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
-          <div className="max-w-4xl mx-auto">
-            {!activeSession ? (
-              /* Empty state — editorial layout */
-              <div className="flex flex-col items-center justify-center h-[70vh] text-center">
-                {/* Wordmark icon */}
-                <div className="w-12 h-12 bg-ink rounded-xs flex items-center justify-center mb-6">
-                  <svg className="w-6 h-6 text-on-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-
-                {/* display-md: 26px / 400 / -0.325px tracking */}
-                <h1 className="text-[26px] font-normal text-ink tracking-[-0.0125em] leading-[1.25] mb-3">
-                  Arbiter Console
-                </h1>
-
-                <p className="text-[16px] text-body max-w-md leading-relaxed mb-10">
-                  A multi-agent consensus protocol incorporating structured logical, creative, and critical analysis.
-                </p>
-
-                {/* Feature cards — surface-card, hairline border, rounded-lg */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full max-w-2xl">
-                  <div className="p-5 bg-surface-card border border-hairline rounded-lg text-[14px] text-body text-left">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted block mb-2">Evaluate Frameworks</span>
-                    "Compare Python vs Go for backend..."
-                  </div>
-
-                  <div className="p-5 bg-surface-card border border-hairline rounded-lg text-[14px] text-body text-left">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted block mb-2">Abstract Concepts</span>
-                    "Explain quantum entanglement simply..."
-                  </div>
-
-                  <div className="p-5 bg-surface-card border border-hairline rounded-lg text-[14px] text-body text-left">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted block mb-2">Risk Assessment</span>
-                    "Draft a sensitive email to a client..."
-                  </div>
-                </div>
+        {!activeSession ? (
+          /* ── HERO / EMPTY STATE: centered input like Gemini ── */
+          <div className="flex-1 flex flex-col items-center justify-center px-4 overflow-y-auto">
+            <div className="w-full max-w-2xl flex flex-col items-center py-12">
+              {/* App icon */}
+              <div className="w-14 h-14 bg-ink rounded-[14px] flex items-center justify-center mb-5 flex-shrink-0">
+                <svg className="w-7 h-7 text-on-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
               </div>
-            ) : (
-              <div className="space-y-6 pb-20">
-                {conversationTurns.length > 0 ? (
-                  conversationTurns.map((turn) => (
-                    <div key={`turn-${turn.turnNumber}`} className="space-y-6">
-                      {turn.userMessage && (
-                        /* User query card — feature-card style */
-                        <div className="bg-surface-card border border-hairline rounded-lg p-5 mb-6">
-                          <h2 className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted mb-2">
-                            User Query
-                          </h2>
-                          <p className="text-[16px] text-ink leading-relaxed whitespace-pre-wrap">
-                            {turn.userMessage.content}
-                          </p>
-                        </div>
-                      )}
 
-                      {turn.rounds.length > 0 && (
-                        /* Execution log divider — hairline + caption-uppercase */
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="h-px bg-hairline flex-1" />
-                          <span className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted">
-                            Execution Log
-                          </span>
-                          <div className="h-px bg-hairline flex-1" />
-                        </div>
-                      )}
+              {/* Headline — display-lg style */}
+              <h1 className="text-[36px] font-normal text-ink tracking-[-0.02em] leading-tight mb-3 text-center">
+                Arbiter
+              </h1>
 
-                      {turn.rounds.map((round, idx) => (
-                        <DebateRoundView
-                          key={`turn-${turn.turnNumber}-round-${round.roundNumber}-${idx}`}
-                          round={round}
-                          isLatest={
-                            turn.turnNumber === latestTurnNumber &&
-                            idx === turn.rounds.length - 1 &&
-                            !turn.finalMessage &&
-                            isCurrentSessionProcessing
-                          }
-                        />
-                      ))}
+              <p className="text-[16px] text-body text-center leading-relaxed mb-8 max-w-sm">
+                A multi-agent consensus protocol. Logic, creativity, and critical analysis debate to reach the truth.
+              </p>
 
-                      {turn.finalMessage && (
-                        <FinalAnswer
-                          consensus={buildConsensusFromMessage(turn.finalMessage)}
-                          onRegenerate={() => {
-                            setPrompt(turn.userMessage?.content || activeSession.userPrompt);
-                            alert("For regeneration, simply click 'Send' again with the prompt pre-filled.");
-                          }}
-                        />
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="bg-surface-card border border-hairline rounded-lg p-5 mb-6">
-                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted mb-2">
-                      User Query
-                    </h2>
-                    <p className="text-[16px] text-ink leading-relaxed">
-                      {activeSession.userPrompt}
-                    </p>
-                  </div>
-                )}
-
-                {isCurrentSessionProcessing && (
-                  /* Processing indicator — timeline-thinking peach dots */
-                  <div className="flex items-center justify-center p-6 bg-surface-card border border-hairline rounded-lg">
-                    <div className="flex space-x-1.5 animate-pulse">
-                      <div className="w-2 h-2 bg-timeline-thinking rounded-pill" />
-                      <div className="w-2 h-2 bg-timeline-thinking rounded-pill" />
-                      <div className="w-2 h-2 bg-timeline-thinking rounded-pill" />
-                    </div>
-                    <span className="ml-3 text-[13px] text-muted font-mono">
-                      Backend debate in progress — this may take several minutes…
-                    </span>
-                  </div>
-                )}
-
-                <div ref={scrollEndRef} />
-              </div>
-            )}
-          </div>
-        </main>
-
-        {/* Input bar */}
-        <div className="border-t border-hairline bg-canvas-soft p-4 md:p-5">
-          <div className="max-w-4xl mx-auto relative">
-            {activeSession && activeSession.followUpCount >= 5 ? (
-              /* Session limit — feature-card style */
-              <div className="flex flex-col items-center justify-center py-6 px-5 bg-surface-card border border-hairline rounded-lg text-center">
-                <span className="text-[16px] font-normal text-ink mb-1.5">
-                  Session Limit Reached
-                </span>
-                <span className="text-[14px] text-body mb-5 max-w-sm">
-                  To maintain optimal agent performance and context limits, please start a new execution.
-                </span>
-                {/* button-download: ink bg, canvas text */}
-                <button
-                  onClick={handleNewChat}
-                  className="px-5 py-2.5 bg-ink hover:opacity-90 text-on-primary rounded-md text-[14px] font-medium transition-opacity"
-                >
-                  Initialize New Chat
-                </button>
-              </div>
-            ) : (
-              /* text-input + button-primary */
-              <form onSubmit={handleSubmit} className="relative">
+              {/* Centered pill input — Gemini-style */}
+              <form onSubmit={handleSubmit} className="w-full relative mb-5">
                 <textarea
                   ref={textareaRef}
                   value={prompt}
@@ -830,22 +707,18 @@ const App: React.FC = () => {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      if (prompt.trim() && !isProcessing) {
-                        handleSubmit();
-                      }
+                      if (prompt.trim() && !isProcessing) handleSubmit();
                     }
                   }}
                   rows={1}
-                  placeholder={activeSessionId ? 'Input secondary query parameters…' : 'Initialize new protocol execution…'}
+                  placeholder="Initialize new protocol execution…"
                   disabled={isProcessing || !session || showOnboarding || showAuth}
-                  className="w-full pl-4 pr-14 py-3 bg-surface-card border border-hairline rounded-md text-ink placeholder:text-muted-soft focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[14px] resize-none max-h-64 overflow-y-auto font-sans"
+                  className="w-full pl-5 pr-14 py-4 bg-surface-card border border-hairline rounded-[28px] text-ink placeholder:text-muted-soft focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/8 disabled:opacity-50 disabled:cursor-not-allowed text-[16px] resize-none max-h-48 overflow-y-auto font-sans transition-colors"
                 />
-
-                {/* button-primary: Cursor Orange, rounded-md */}
                 <button
                   type="submit"
                   disabled={!prompt.trim() || isProcessing || !session}
-                  className="absolute right-2 bottom-2 h-9 w-9 bg-primary hover:bg-primary-active text-on-primary rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="absolute right-3 bottom-3 h-9 w-9 bg-primary hover:bg-primary-active text-on-primary rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
                 >
                   {isCurrentSessionProcessing ? (
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -860,17 +733,193 @@ const App: React.FC = () => {
                   )}
                 </button>
               </form>
-            )}
 
-            <div className="text-center mt-2.5">
-              <p className="text-[12px] text-muted-soft font-mono">
-                Two Ollama experts plus an arbiter judge. Run the backend on port
-                5050 — Vite proxies <code className="text-muted">/api</code> in development.
+              {/* Clickable suggestion chips */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full">
+                {[
+                  { label: 'Evaluate Frameworks', example: 'Compare Python vs Go for a high-throughput backend' },
+                  { label: 'Abstract Concepts', example: 'Explain quantum entanglement simply' },
+                  { label: 'Risk Assessment', example: 'Draft a sensitive email to a client' },
+                ].map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => {
+                      if (session) setPrompt(chip.example);
+                      else setShowAuth(true);
+                    }}
+                    className="text-left p-4 bg-surface-card border border-hairline rounded-lg hover:border-hairline-strong transition-colors group"
+                  >
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.055em] text-muted mb-1.5 group-hover:text-body transition-colors">
+                      {chip.label}
+                    </span>
+                    <span className="text-[13px] text-body">"{chip.example}…"</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Hint */}
+              <p className="text-[12px] text-muted-soft font-mono mt-6 text-center">
+                Two Ollama experts plus an arbiter judge. Run the backend on port 5050 — Vite proxies{' '}
+                <code className="text-muted">/api</code> in development.
               </p>
             </div>
           </div>
-        </div>
+        ) : (
+          /* ── ACTIVE SESSION: chat layout with bottom-anchored input ── */
+          <>
+            <main className="flex-1 overflow-y-auto scroll-smooth">
+              <div className="max-w-3xl mx-auto px-4 py-6 space-y-10">
+                {conversationTurns.length > 0 ? (
+                  conversationTurns.map((turn) => (
+                    <div key={`turn-${turn.turnNumber}`}>
+                      {/* User message — right-aligned bubble */}
+                      {turn.userMessage && (
+                        <div className="flex justify-end mb-6">
+                          <div className="max-w-[78%] bg-surface-card border border-hairline rounded-[20px] px-5 py-3.5 text-[16px] text-ink leading-relaxed whitespace-pre-wrap">
+                            {turn.userMessage.content}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Execution log divider */}
+                      {turn.rounds.length > 0 && (
+                        <div className="flex items-center gap-3 mb-5">
+                          <div className="h-px bg-hairline flex-1" />
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted">
+                            Execution Log
+                          </span>
+                          <div className="h-px bg-hairline flex-1" />
+                        </div>
+                      )}
+
+                      {/* Debate rounds */}
+                      <div className="space-y-3">
+                        {turn.rounds.map((round, idx) => (
+                          <DebateRoundView
+                            key={`turn-${turn.turnNumber}-round-${round.roundNumber}-${idx}`}
+                            round={round}
+                            isLatest={
+                              turn.turnNumber === latestTurnNumber &&
+                              idx === turn.rounds.length - 1 &&
+                              !turn.finalMessage &&
+                              isCurrentSessionProcessing
+                            }
+                          />
+                        ))}
+                      </div>
+
+                      {/* Final answer */}
+                      {turn.finalMessage && (
+                        <FinalAnswer
+                          consensus={buildConsensusFromMessage(turn.finalMessage)}
+                          onRegenerate={() => {
+                            setPrompt(turn.userMessage?.content || activeSession.userPrompt);
+                            alert("For regeneration, simply click 'Send' again with the prompt pre-filled.");
+                          }}
+                        />
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  /* Fallback: single query bubble while messages load */
+                  <div className="flex justify-end mb-6">
+                    <div className="max-w-[78%] bg-surface-card border border-hairline rounded-[20px] px-5 py-3.5 text-[16px] text-ink leading-relaxed">
+                      {activeSession.userPrompt}
+                    </div>
+                  </div>
+                )}
+
+                {/* Typing/processing indicator */}
+                {isCurrentSessionProcessing && (
+                  <div className="flex items-center gap-3 py-3 pl-1">
+                    <div className="flex items-end gap-1.5">
+                      <div
+                        className="w-2.5 h-2.5 rounded-pill bg-timeline-thinking animate-typing-dot"
+                        style={{ animationDelay: '0ms' }}
+                      />
+                      <div
+                        className="w-2.5 h-2.5 rounded-pill bg-timeline-grep animate-typing-dot"
+                        style={{ animationDelay: '200ms' }}
+                      />
+                      <div
+                        className="w-2.5 h-2.5 rounded-pill bg-timeline-read animate-typing-dot"
+                        style={{ animationDelay: '400ms' }}
+                      />
+                    </div>
+                    <span className="text-[13px] text-muted font-mono">
+                      Debate in progress — this may take several minutes…
+                    </span>
+                  </div>
+                )}
+
+                <div ref={scrollEndRef} />
+              </div>
+            </main>
+
+            {/* Bottom input bar — pill-shaped, anchored */}
+            <div className="flex-shrink-0 bg-canvas border-t border-hairline px-4 py-4">
+              <div className="max-w-3xl mx-auto">
+                {activeSession && activeSession.followUpCount >= 5 ? (
+                  <div className="flex flex-col items-center justify-center py-5 px-5 bg-surface-card border border-hairline rounded-lg text-center">
+                    <span className="text-[16px] font-normal text-ink mb-1.5">Session Limit Reached</span>
+                    <span className="text-[14px] text-body mb-4 max-w-sm">
+                      To maintain optimal agent performance and context limits, please start a new execution.
+                    </span>
+                    <button
+                      onClick={handleNewChat}
+                      className="px-5 py-2.5 bg-ink hover:opacity-90 text-on-primary rounded-md text-[14px] font-medium transition-opacity"
+                    >
+                      Initialize New Chat
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="relative">
+                    <textarea
+                      ref={textareaRef}
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (prompt.trim() && !isProcessing) handleSubmit();
+                        }
+                      }}
+                      rows={1}
+                      placeholder="Input secondary query parameters…"
+                      disabled={isProcessing || !session || showOnboarding || showAuth}
+                      className="w-full pl-5 pr-14 py-3.5 bg-surface-card border border-hairline rounded-[28px] text-ink placeholder:text-muted-soft focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/8 disabled:opacity-50 disabled:cursor-not-allowed text-[16px] resize-none max-h-40 overflow-y-auto font-sans transition-colors"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!prompt.trim() || isProcessing || !session}
+                      className="absolute right-3 bottom-3 h-9 w-9 bg-primary hover:bg-primary-active text-on-primary rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      {isCurrentSessionProcessing ? (
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                      )}
+                    </button>
+                  </form>
+                )}
+
+                <p className="text-[12px] text-muted-soft font-mono mt-2.5 text-center">
+                  Two Ollama experts plus an arbiter judge. Run the backend on port 5050 — Vite proxies{' '}
+                  <code className="text-muted">/api</code> in development.
+                </p>
+              </div>
+            </div>
+          </>
+        )}
       </div>
+
     </div>
   );
 };

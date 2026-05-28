@@ -185,7 +185,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       >
         {/* Header */}
         <div className="px-4 py-4 border-b border-hairline flex items-center justify-between">
-          {/* display-sm: 22px / 400 / -0.11px tracking */}
+          {/* display-sm: 18px / 400 / -0.005em tracking */}
           <h1 className="text-[18px] font-normal text-ink tracking-[-0.005em]">
             Arbiter
           </h1>
@@ -218,25 +218,28 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Session list */}
         <div className="flex-1 overflow-y-auto px-3 py-3">
-          {/* New Chat — button-primary: Cursor Orange */}
+          {/* New Chat — Gemini-style: slim pencil+text, not a block button */}
           <button
             onClick={() => {
               onNewChat();
               if (window.innerWidth < 768) toggleSidebar();
             }}
-            className="w-full flex items-center gap-2.5 px-4 py-2.5 bg-primary hover:bg-primary-active text-on-primary rounded-md transition-colors text-[14px] font-medium mb-4"
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-hairline text-ink transition-colors text-[14px] font-medium mb-1 group"
           >
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 flex-shrink-0 text-muted group-hover:text-ink transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
             New Chat
           </button>
 
+          {/* A thin separator before history */}
+          <div className="h-px bg-hairline mx-1 my-2" />
+
           {/* History label */}
-          <div className="mb-1.5">
-            <h2 className="text-[11px] font-semibold text-muted uppercase tracking-[0.055em] px-1">
-              Execution History
+          <div className="mb-1.5 px-1">
+            <h2 className="text-[11px] font-semibold text-muted uppercase tracking-[0.055em]">
+              Recent
             </h2>
           </div>
 
@@ -250,9 +253,9 @@ const Sidebar: React.FC<SidebarProps> = ({
               return (
                 <div
                   key={session.id}
-                  className={`group flex items-center rounded-md text-[14px] transition-colors ${
+                  className={`group flex items-center rounded-lg text-[14px] transition-colors ${
                     isActive
-                      ? 'bg-ink text-on-primary'
+                      ? 'bg-hairline text-ink'
                       : 'text-body hover:bg-hairline hover:text-ink'
                   }`}
                 >
