@@ -10,108 +10,199 @@
         theme: {
           extend: {
             colors: {
-              brand: { 
-                navy: 'rgb(var(--c-brand-navy))', 
-                azure: 'rgb(var(--c-brand-azure))' 
+              /* ── Brand ── */
+              primary:    { DEFAULT: 'var(--c-primary)',        active: 'var(--c-primary-active)' },
+              /* ── Surface ── */
+              canvas:     { DEFAULT: 'var(--c-canvas)',         soft: 'var(--c-canvas-soft)' },
+              surface:    { card: 'var(--c-surface-card)',      strong: 'var(--c-surface-strong)' },
+              /* ── Hairlines ── */
+              hairline:   { DEFAULT: 'var(--c-hairline)',       soft: 'var(--c-hairline-soft)', strong: 'var(--c-hairline-strong)' },
+              /* ── Text ── */
+              ink:        'var(--c-ink)',
+              body:       { DEFAULT: 'var(--c-body)',           strong: 'var(--c-body-strong)' },
+              muted:      { DEFAULT: 'var(--c-muted)',          soft: 'var(--c-muted-soft)' },
+              'on-primary': 'var(--c-on-primary)',
+              /* ── Timeline (AI-action pastels) ── */
+              timeline:   {
+                thinking: 'var(--c-timeline-thinking)',
+                grep:     'var(--c-timeline-grep)',
+                read:     'var(--c-timeline-read)',
+                edit:     'var(--c-timeline-edit)',
+                done:     'var(--c-timeline-done)',
               },
-              base: { 
-                DEFAULT: 'rgb(var(--c-base-default))', 
-                panel: 'rgb(var(--c-base-panel))', 
-                divider: 'rgb(var(--c-base-divider))' 
-              },
-              slate: { 
-                custom: 'rgb(var(--c-slate-custom))' 
-              },
-              signal: { 
-                green: 'rgb(var(--c-signal-green))', 
-                amber: 'rgb(var(--c-signal-amber))', 
-                red: 'rgb(var(--c-signal-red))' 
-              },
-              layer: {
-                white: 'rgb(var(--c-layer-white))'
-              },
-              core: {
-                inverse: 'rgb(var(--c-text-inverse))'
-              }
+              /* ── Semantic ── */
+              semantic:   { success: 'var(--c-semantic-success)', error: 'var(--c-semantic-error)' },
             },
-            fontFamily: { sans: ['Inter', 'sans-serif'] },
-            boxShadow: { 
-                sm: '0 1px 2px 0 rgba(0, 0, 0, var(--shadow-opacity-sm))', 
-                default: '0 4px 8px -2px rgba(0, 0, 0, var(--shadow-opacity-default))' 
-            }
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+              mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
+            },
+            borderRadius: {
+              'xs':   '4px',
+              'sm':   '6px',
+              'md':   '8px',
+              'lg':   '12px',
+              'xl':   '16px',
+              'pill': '9999px',
+            },
+            letterSpacing: {
+              'display-mega': '-0.03em',
+              'display-lg':   '-0.02em',
+              'display-md':   '-0.0125em',
+              'display-sm':   '-0.005em',
+              'upper':        '0.055em',
+            },
           }
         }
       }
     </script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-      
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+      /* ── Light Mode Tokens ── */
       :root {
-        --c-brand-navy: 11, 31, 51; /* #0B1F33 */
-        --c-brand-azure: 60, 126, 179; /* #3C7EB3 */
-        
-        --c-base-default: 245, 246, 248; /* #F5F6F8 */
-        --c-base-panel: 224, 227, 232; /* #E0E3E8 */
-        --c-base-divider: 208, 213, 221; /* #D0D5DD */
-        
-        --c-layer-white: 255, 255, 255; /* #FFFFFF */
-        
-        --c-slate-custom: 75, 85, 99; /* #4B5563 */
-        
-        --c-signal-green: 26, 157, 104; /* #1A9D68 */
-        --c-signal-amber: 217, 138, 27; /* #D98A1B */
-        --c-signal-red: 196, 63, 74; /* #C43F4A */
-        
-        --c-text-inverse: 255, 255, 255; /* White for inverse text */
-        
-        --shadow-opacity-sm: 0.05;
-        --shadow-opacity-default: 0.05;
+        /* Brand */
+        --c-primary:              #f54e00;
+        --c-primary-active:       #d04200;
+
+        /* Surface */
+        --c-canvas:               #f7f7f4;
+        --c-canvas-soft:          #fafaf7;
+        --c-surface-card:         #ffffff;
+        --c-surface-strong:       #e6e5e0;
+
+        /* Hairlines */
+        --c-hairline:             #e6e5e0;
+        --c-hairline-soft:        #efeee8;
+        --c-hairline-strong:      #cfcdc4;
+
+        /* Text */
+        --c-ink:                  #26251e;
+        --c-body:                 #5a5852;
+        --c-body-strong:          #26251e;
+        --c-muted:                #807d72;
+        --c-muted-soft:           #a09c92;
+        --c-on-primary:           #ffffff;
+
+        /* Timeline pastels — AI-action signature */
+        --c-timeline-thinking:    #dfa88f;
+        --c-timeline-grep:        #9fc9a2;
+        --c-timeline-read:        #9fbbe0;
+        --c-timeline-edit:        #c0a8dd;
+        --c-timeline-done:        #c08532;
+
+        /* Semantic */
+        --c-semantic-success:     #1f8a65;
+        --c-semantic-error:       #cf2d56;
       }
 
+      /* ── Dark Mode Tokens (warm dark) ── */
       html.dark {
-        --c-brand-navy: 226, 229, 233; /* #E2E5E9 */
-        --c-brand-azure: 74, 144, 226; /* #4A90E2 */
-        
-        --c-base-default: 14, 17, 22; /* #0E1116 */
-        --c-base-panel: 30, 35, 43; /* #1E232B */
-        --c-base-divider: 42, 48, 56; /* #2A3038 */
-        
-        --c-layer-white: 22, 25, 32; /* #161920 */
-        
-        --c-slate-custom: 156, 163, 175; /* #9CA3AF */
-        
-        --c-signal-green: 34, 197, 94; 
-        --c-signal-amber: 245, 158, 11; 
-        --c-signal-red: 239, 68, 68;
-        
-        --c-text-inverse: 14, 17, 22; /* Dark for text on light headers/buttons */
-        
-        --shadow-opacity-sm: 0.4;
-        --shadow-opacity-default: 0.4;
+        /* Brand stays the same */
+        --c-primary:              #f54e00;
+        --c-primary-active:       #d04200;
+
+        /* Surface → warm dark */
+        --c-canvas:               #1a1916;
+        --c-canvas-soft:          #1f1e1b;
+        --c-surface-card:         #222119;
+        --c-surface-strong:       #2e2d27;
+
+        /* Hairlines → warm dark */
+        --c-hairline:             #2e2d27;
+        --c-hairline-soft:        #282720;
+        --c-hairline-strong:      #3a3932;
+
+        /* Text → warm inverted */
+        --c-ink:                  #f0efe8;
+        --c-body:                 #a09c92;
+        --c-body-strong:          #f0efe8;
+        --c-muted:                #6e6b61;
+        --c-muted-soft:           #4f4d46;
+        --c-on-primary:           #ffffff;
+
+        /* Timeline pastels are slightly muted in dark mode */
+        --c-timeline-thinking:    #c49278;
+        --c-timeline-grep:        #85ac88;
+        --c-timeline-read:        #85a3c8;
+        --c-timeline-edit:        #a490c4;
+        --c-timeline-done:        #a87228;
+
+        /* Semantic */
+        --c-semantic-success:     #2aaf80;
+        --c-semantic-error:       #e5476a;
       }
-      
+
+      /* ── Base ── */
+      *, *::before, *::after { box-sizing: border-box; }
+
       body {
-        font-family: 'Inter', sans-serif;
-        background-color: rgb(var(--c-base-default));
-        color: rgb(var(--c-slate-custom));
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 1.5;
+        background-color: var(--c-canvas);
+        color: var(--c-body);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
-      
-      /* Custom scrollbar for cleanliness */
-      ::-webkit-scrollbar {
-        width: 8px;
+
+      code, pre, .font-mono {
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-size: 13px;
       }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
+
+      /* ── Custom scrollbar ── */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb {
-        background: rgb(var(--c-base-divider));
+        background: var(--c-hairline-strong);
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover { background: var(--c-muted); }
+
+      /* ── Prose overrides (react-markdown) ── */
+      .prose { color: var(--c-body); }
+      .prose strong { color: var(--c-ink); font-weight: 600; }
+      .prose h1, .prose h2, .prose h3, .prose h4 { color: var(--c-ink); font-weight: 400; letter-spacing: -0.01em; }
+      .prose code {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        background: var(--c-surface-strong);
+        color: var(--c-ink);
+        padding: 1px 5px;
         border-radius: 4px;
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: rgb(var(--c-slate-custom));
+      .prose pre {
+        background: var(--c-surface-card);
+        border: 1px solid var(--c-hairline);
+        border-radius: 8px;
+        padding: 16px 20px;
       }
+      .prose pre code { background: transparent; padding: 0; }
+      .prose a { color: var(--c-primary); }
+      .prose blockquote { border-left-color: var(--c-hairline-strong); color: var(--c-muted); }
+      .prose hr { border-color: var(--c-hairline); }
+
+      /* ── Animation ── */
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in-up { animation: fadeInUp 0.2s ease-out forwards; }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      .animate-spin { animation: spin 0.75s linear infinite; }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+      .animate-pulse { animation: pulse 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
-    
+
     <!-- Initialize theme immediately to prevent flash -->
     <script>
       if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {

@@ -616,18 +616,18 @@ const App: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-base-DEFAULT text-brand-navy">
-        Loading...
+      <div className="flex h-screen items-center justify-center bg-canvas">
+        <div className="text-[13px] font-mono text-muted">Loading…</div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-base-DEFAULT overflow-hidden font-sans text-slate-custom">
+    <div className="flex h-screen bg-canvas overflow-hidden font-sans text-body">
       {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
 
       {showAuth && !session && !showOnboarding && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/60 backdrop-blur-sm px-4">
           <LoginPage
             onLogin={() => {
               setShowAuth(false);
@@ -640,10 +640,11 @@ const App: React.FC = () => {
 
       {!session && !showOnboarding && !showAuth && (
         <div className="fixed top-4 right-5 z-50">
+          {/* button-secondary: white card on cream canvas */}
           <button
             type="button"
             onClick={() => setShowAuth(true)}
-            className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black hover:bg-zinc-200 transition"
+            className="rounded-md border border-hairline bg-surface-card px-5 py-2 text-[14px] font-medium text-ink hover:border-hairline-strong transition"
           >
             Get started
           </button>
@@ -665,47 +666,53 @@ const App: React.FC = () => {
       />
 
       <div className="flex-1 flex flex-col h-full relative">
-        <div className="md:hidden bg-base-panel border-b border-base-divider p-4 flex items-center justify-between z-10">
-          <button onClick={() => setIsSidebarOpen(true)} className="text-slate-custom">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        {/* Mobile top bar */}
+        <div className="md:hidden bg-canvas-soft border-b border-hairline px-4 py-3.5 flex items-center justify-between z-10">
+          <button onClick={() => setIsSidebarOpen(true)} className="text-muted hover:text-ink transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <span className="font-semibold text-brand-navy">Arbiter</span>
-          <div className="w-6"></div>
+          <span className="text-[16px] font-normal text-ink tracking-[-0.005em]">Arbiter</span>
+          <div className="w-5" />
         </div>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
           <div className="max-w-4xl mx-auto">
             {!activeSession ? (
-              <div className="flex flex-col items-center justify-center h-[70vh] text-center space-y-6">
-                <div className="w-16 h-16 bg-layer-white border border-base-divider rounded shadow-sm flex items-center justify-center text-brand-navy mb-4">
-                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              /* Empty state — editorial layout */
+              <div className="flex flex-col items-center justify-center h-[70vh] text-center">
+                {/* Wordmark icon */}
+                <div className="w-12 h-12 bg-ink rounded-xs flex items-center justify-center mb-6">
+                  <svg className="w-6 h-6 text-on-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                 </div>
 
-                <h1 className="text-3xl font-semibold text-brand-navy tracking-tight">
+                {/* display-md: 26px / 400 / -0.325px tracking */}
+                <h1 className="text-[26px] font-normal text-ink tracking-[-0.0125em] leading-[1.25] mb-3">
                   Arbiter Console
                 </h1>
 
-                <p className="text-base text-slate-custom max-w-md">
+                <p className="text-[16px] text-body max-w-md leading-relaxed mb-10">
                   A multi-agent consensus protocol incorporating structured logical, creative, and critical analysis.
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl mt-8">
-                  <div className="p-4 bg-layer-white border border-base-divider rounded shadow-sm text-sm text-slate-custom text-left">
-                    <span className="font-medium text-brand-navy block mb-1">Evaluate Frameworks</span>
+                {/* Feature cards — surface-card, hairline border, rounded-lg */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full max-w-2xl">
+                  <div className="p-5 bg-surface-card border border-hairline rounded-lg text-[14px] text-body text-left">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted block mb-2">Evaluate Frameworks</span>
                     "Compare Python vs Go for backend..."
                   </div>
 
-                  <div className="p-4 bg-layer-white border border-base-divider rounded shadow-sm text-sm text-slate-custom text-left">
-                    <span className="font-medium text-brand-navy block mb-1">Abstract Concepts</span>
+                  <div className="p-5 bg-surface-card border border-hairline rounded-lg text-[14px] text-body text-left">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted block mb-2">Abstract Concepts</span>
                     "Explain quantum entanglement simply..."
                   </div>
 
-                  <div className="p-4 bg-layer-white border border-base-divider rounded shadow-sm text-sm text-slate-custom text-left">
-                    <span className="font-medium text-brand-navy block mb-1">Risk Assessment</span>
+                  <div className="p-5 bg-surface-card border border-hairline rounded-lg text-[14px] text-body text-left">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted block mb-2">Risk Assessment</span>
                     "Draft a sensitive email to a client..."
                   </div>
                 </div>
@@ -716,23 +723,25 @@ const App: React.FC = () => {
                   conversationTurns.map((turn) => (
                     <div key={`turn-${turn.turnNumber}`} className="space-y-6">
                       {turn.userMessage && (
-                        <div className="bg-layer-white border border-base-divider rounded p-6 mb-8 shadow-sm">
-                          <h2 className="text-xs font-semibold text-brand-navy uppercase tracking-wider mb-2">
+                        /* User query card — feature-card style */
+                        <div className="bg-surface-card border border-hairline rounded-lg p-5 mb-6">
+                          <h2 className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted mb-2">
                             User Query
                           </h2>
-                          <p className="text-base text-slate-custom font-medium whitespace-pre-wrap">
+                          <p className="text-[16px] text-ink leading-relaxed whitespace-pre-wrap">
                             {turn.userMessage.content}
                           </p>
                         </div>
                       )}
 
                       {turn.rounds.length > 0 && (
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className="h-px bg-base-divider flex-1"></div>
-                          <span className="text-xs font-semibold text-brand-navy uppercase">
+                        /* Execution log divider — hairline + caption-uppercase */
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="h-px bg-hairline flex-1" />
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted">
                             Execution Log
                           </span>
-                          <div className="h-px bg-base-divider flex-1"></div>
+                          <div className="h-px bg-hairline flex-1" />
                         </div>
                       )}
 
@@ -761,25 +770,26 @@ const App: React.FC = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="bg-layer-white border border-base-divider rounded p-6 mb-8 shadow-sm">
-                    <h2 className="text-xs font-semibold text-brand-navy uppercase tracking-wider mb-2">
+                  <div className="bg-surface-card border border-hairline rounded-lg p-5 mb-6">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.055em] text-muted mb-2">
                       User Query
                     </h2>
-                    <p className="text-base text-slate-custom font-medium">
+                    <p className="text-[16px] text-ink leading-relaxed">
                       {activeSession.userPrompt}
                     </p>
                   </div>
                 )}
 
                 {isCurrentSessionProcessing && (
-                  <div className="flex items-center justify-center p-8 bg-layer-white border border-base-divider rounded shadow-sm">
-                    <div className="flex space-x-2 animate-pulse">
-                      <div className="w-2 h-2 bg-brand-azure rounded-sm"></div>
-                      <div className="w-2 h-2 bg-brand-azure rounded-sm"></div>
-                      <div className="w-2 h-2 bg-brand-azure rounded-sm"></div>
+                  /* Processing indicator — timeline-thinking peach dots */
+                  <div className="flex items-center justify-center p-6 bg-surface-card border border-hairline rounded-lg">
+                    <div className="flex space-x-1.5 animate-pulse">
+                      <div className="w-2 h-2 bg-timeline-thinking rounded-pill" />
+                      <div className="w-2 h-2 bg-timeline-thinking rounded-pill" />
+                      <div className="w-2 h-2 bg-timeline-thinking rounded-pill" />
                     </div>
-                    <span className="ml-3 text-sm text-slate-custom font-medium">
-                      Backend debate in progress — this may take several minutes...
+                    <span className="ml-3 text-[13px] text-muted font-mono">
+                      Backend debate in progress — this may take several minutes…
                     </span>
                   </div>
                 )}
@@ -790,24 +800,28 @@ const App: React.FC = () => {
           </div>
         </main>
 
-        <div className="border-t border-base-divider bg-base-DEFAULT p-4 md:p-6">
+        {/* Input bar */}
+        <div className="border-t border-hairline bg-canvas-soft p-4 md:p-5">
           <div className="max-w-4xl mx-auto relative">
             {activeSession && activeSession.followUpCount >= 5 ? (
-              <div className="flex flex-col items-center justify-center py-5 px-4 bg-layer-white border border-base-divider rounded-xl text-center shadow-sm">
-                <span className="text-sm font-semibold text-brand-navy mb-1">
+              /* Session limit — feature-card style */
+              <div className="flex flex-col items-center justify-center py-6 px-5 bg-surface-card border border-hairline rounded-lg text-center">
+                <span className="text-[16px] font-normal text-ink mb-1.5">
                   Session Limit Reached
                 </span>
-                <span className="text-xs text-slate-custom mb-4">
+                <span className="text-[14px] text-body mb-5 max-w-sm">
                   To maintain optimal agent performance and context limits, please start a new execution.
                 </span>
+                {/* button-download: ink bg, canvas text */}
                 <button
                   onClick={handleNewChat}
-                  className="px-5 py-2.5 bg-black hover:bg-zinc-800 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-5 py-2.5 bg-ink hover:opacity-90 text-on-primary rounded-md text-[14px] font-medium transition-opacity"
                 >
                   Initialize New Chat
                 </button>
               </div>
             ) : (
+              /* text-input + button-primary */
               <form onSubmit={handleSubmit} className="relative">
                 <textarea
                   ref={textareaRef}
@@ -822,34 +836,36 @@ const App: React.FC = () => {
                     }
                   }}
                   rows={1}
-                  placeholder={activeSessionId ? "Input secondary query parameters..." : "Initialize new protocol execution..."}
+                  placeholder={activeSessionId ? 'Input secondary query parameters…' : 'Initialize new protocol execution…'}
                   disabled={isProcessing || !session || showOnboarding || showAuth}
-                  className="w-full pl-4 pr-14 py-3 bg-layer-white border border-base-divider rounded text-slate-custom placeholder-slate-400 focus:outline-none focus:border-brand-azure shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm resize-none max-h-64 overflow-y-auto"
+                  className="w-full pl-4 pr-14 py-3 bg-surface-card border border-hairline rounded-md text-ink placeholder:text-muted-soft focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[14px] resize-none max-h-64 overflow-y-auto font-sans"
                 />
 
+                {/* button-primary: Cursor Orange, rounded-md */}
                 <button
                   type="submit"
                   disabled={!prompt.trim() || isProcessing || !session}
-                  className="absolute right-2 bottom-2 h-9 w-9 bg-brand-navy hover:brightness-110 text-core-inverse rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center p-2"
+                  className="absolute right-2 bottom-2 h-9 w-9 bg-primary hover:bg-primary-active text-on-primary rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 >
                   {isCurrentSessionProcessing ? (
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
                   ) : (
                     <svg className="w-4 h-4 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                     </svg>
                   )}
                 </button>
               </form>
             )}
 
-            <div className="text-center mt-3">
-              <p className="text-xs text-slate-custom">
-                Two Ollama experts plus an arbiter judge (see onboarding). Run the backend on port
-                5050 — Vite proxies <code className="text-brand-navy">/api</code> in development.
+            <div className="text-center mt-2.5">
+              <p className="text-[12px] text-muted-soft font-mono">
+                Two Ollama experts plus an arbiter judge. Run the backend on port
+                5050 — Vite proxies <code className="text-muted">/api</code> in development.
               </p>
             </div>
           </div>
