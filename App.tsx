@@ -46,6 +46,7 @@ const App: React.FC = () => {
     () => localStorage.getItem('arbiter_onboarding_done') !== 'true'
   );
 
+  
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const savedAgentMessageKeysRef = useRef<Set<string>>(new Set());
