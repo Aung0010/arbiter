@@ -7,24 +7,24 @@ import fs from 'fs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Serves landing.html at '/' and the React SPA at '/app'.
- * In production both files are built as separate entry points.
+ * Serves landing.html at '/landing' only.
+ * The React SPA continues to be served at '/' (index.html) as normal.
+ * This avoids Vite resolving '/app' to App.tsx and serving raw source.
  */
 function landingPagePlugin(): Plugin {
   return {
     name: 'landing-page-router',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        // Serve landing.html for root requests
-        if (req.url === '/' || req.url === '/landing' || req.url === '/landing.html') {
+        const url = req.url?.split('?')[0]; // strip query string
+        if (url === '/landing' || url === '/landing.html') {
           const landingPath = path.resolve(__dirname, 'landing.html');
           if (fs.existsSync(landingPath)) {
-            res.setHeader('Content-Type', 'text/html');
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.end(fs.readFileSync(landingPath, 'utf-8'));
             return;
           }
         }
-        // All /app/* requests fall through to Vite's SPA handler (index.html)
         next();
       });
     },
