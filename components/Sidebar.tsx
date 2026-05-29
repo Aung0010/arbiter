@@ -173,15 +173,17 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {/* ── SIDEBAR PANEL ── */}
+      {/* ── SIDEBAR PANEL ──
+           On mobile: always fixed overlay, slides in/out with translate.
+           On desktop (md+): always visible, part of the normal flex row. */}
       <div
         className={`
           fixed inset-y-0 left-0 z-30 flex flex-col
-          w-[85vw] max-w-[320px] md:w-72
+          w-[85vw] max-w-[300px]
           bg-canvas-soft border-r border-hairline
           transform transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          md:relative md:translate-x-0
+          md:relative md:w-64 md:flex-shrink-0
+          ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
         {/* Header */}

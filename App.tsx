@@ -623,7 +623,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-canvas overflow-hidden font-sans text-body">
+    <div className="flex h-screen bg-canvas overflow-hidden font-sans text-body" style={{WebkitOverflowScrolling: 'touch'}}>
       {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
 
       {showAuth && !session && !showOnboarding && (
@@ -639,12 +639,12 @@ const App: React.FC = () => {
       )}
 
       {!session && !showOnboarding && !showAuth && (
-        <div className="fixed top-4 right-5 z-50">
+        <div className="fixed top-3 right-4 z-50">
           {/* button-secondary: white card on cream canvas */}
           <button
             type="button"
             onClick={() => setShowAuth(true)}
-            className="rounded-md border border-hairline bg-surface-card px-5 py-2 text-[14px] font-medium text-ink hover:border-hairline-strong transition"
+            className="rounded-md border border-hairline bg-surface-card px-4 py-2 text-[14px] font-medium text-ink hover:border-hairline-strong transition min-h-[40px]"
           >
             Get started
           </button>
@@ -665,18 +665,24 @@ const App: React.FC = () => {
         onShowTour={() => setShowOnboarding(true)}
       />
 
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <div className="md:hidden bg-canvas border-b border-hairline px-4 py-3 flex items-center justify-between z-10 flex-shrink-0">
+      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
+        {/* Mobile top bar — only shown on small screens */}
+        <div className="md:hidden bg-canvas border-b border-hairline px-4 flex items-center justify-between z-10 flex-shrink-0" style={{minHeight: '56px', paddingTop: 'max(env(safe-area-inset-top, 0px), 0px)'}}>
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-1 -ml-1 text-muted hover:text-ink transition-colors">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 -ml-1 text-muted hover:text-ink transition-colors"
+              aria-label="Open sidebar"
+              style={{minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <span className="text-[18px] font-medium text-ink tracking-tight">Arbiter</span>
+            <span className="text-[17px] font-medium text-ink tracking-tight">Arbiter</span>
           </div>
           {session && (
-            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase overflow-hidden border border-primary/20">
+            <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase overflow-hidden border border-primary/20">
               {session.user?.email?.[0] || 'U'}
             </div>
           )}
@@ -684,27 +690,27 @@ const App: React.FC = () => {
 
         {!activeSession ? (
           /* ── HERO / EMPTY STATE: centered input like Gemini ── */
-          <div className="flex-1 flex flex-col items-center justify-center px-4 overflow-y-auto">
-            <div className="w-full max-w-2xl flex flex-col items-center py-12">
+          <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto" style={{padding: '16px 16px'}}>
+            <div className="w-full max-w-xl flex flex-col items-center" style={{paddingTop: '24px', paddingBottom: '32px'}}>
               {/* App icon */}
-              <div className="w-14 h-14 bg-ink rounded-[14px] flex items-center justify-center mb-5 flex-shrink-0">
-                <svg className="w-7 h-7 text-on-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-12 h-12 md:w-14 md:h-14 bg-ink rounded-[14px] flex items-center justify-center mb-4 flex-shrink-0">
+                <svg className="w-6 h-6 md:w-7 md:h-7 text-on-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                     d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
 
-              {/* Headline — display-lg style */}
-              <h1 className="text-[28px] md:text-[36px] font-normal text-ink tracking-[-0.02em] leading-tight mb-3 text-center">
+              {/* Headline */}
+              <h1 className="text-[26px] md:text-[36px] font-normal text-ink tracking-[-0.02em] leading-tight mb-2 text-center">
                 Arbiter
               </h1>
 
-              <p className="text-[15px] md:text-[16px] text-body text-center leading-relaxed mb-6 md:mb-8 max-w-sm px-2">
+              <p className="text-[14px] md:text-[16px] text-body text-center leading-relaxed mb-6 md:mb-8 max-w-xs md:max-w-sm">
                 A multi-agent consensus protocol. Logic, creativity, and critical analysis debate to reach the truth.
               </p>
 
               {/* Centered pill input — Gemini-style */}
-              <form onSubmit={handleSubmit} className="w-full relative mb-5">
+              <form onSubmit={handleSubmit} className="w-full relative mb-4">
                 <textarea
                   ref={textareaRef}
                   value={prompt}
@@ -718,12 +724,15 @@ const App: React.FC = () => {
                   rows={1}
                   placeholder="Initialize new protocol execution…"
                   disabled={isProcessing || !session || showOnboarding || showAuth}
-                  className="w-full pl-5 pr-14 py-3.5 md:py-4 bg-surface-card border border-hairline rounded-[28px] text-ink placeholder:text-muted-soft focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/8 disabled:opacity-50 disabled:cursor-not-allowed text-[15px] md:text-[16px] resize-none max-h-48 overflow-y-auto font-sans transition-colors shadow-sm"
+                  className="w-full bg-surface-card border border-hairline rounded-[24px] text-ink placeholder:text-muted-soft focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/8 disabled:opacity-50 disabled:cursor-not-allowed text-[15px] md:text-[16px] resize-none overflow-y-auto font-sans transition-colors shadow-sm"
+                  style={{paddingLeft: '18px', paddingRight: '52px', paddingTop: '14px', paddingBottom: '14px', maxHeight: '180px'}}
                 />
                 <button
                   type="submit"
                   disabled={!prompt.trim() || isProcessing || !session}
-                  className="absolute right-2.5 bottom-2.5 md:right-3 md:bottom-3 h-9 w-9 bg-primary hover:bg-primary-active text-on-primary rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+                  aria-label="Send message"
+                  className="absolute right-2.5 bottom-2 bg-primary hover:bg-primary-active text-on-primary rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+                  style={{width: '40px', height: '40px'}}
                 >
                   {isCurrentSessionProcessing ? (
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -739,8 +748,8 @@ const App: React.FC = () => {
                 </button>
               </form>
 
-              {/* Clickable suggestion chips */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full mt-2">
+              {/* Clickable suggestion chips — 1-col on mobile, 3-col on md+ */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 w-full">
                 {[
                   { label: 'Evaluate Frameworks', example: 'Compare Python vs Go for a high-throughput backend' },
                   { label: 'Abstract Concepts', example: 'Explain quantum entanglement simply' },
@@ -753,18 +762,19 @@ const App: React.FC = () => {
                       if (session) setPrompt(chip.example);
                       else setShowAuth(true);
                     }}
-                    className="text-left p-3.5 md:p-4 bg-surface-card border border-hairline rounded-xl hover:border-hairline-strong transition-all group shadow-sm hover:shadow-md"
+                    className="text-left bg-surface-card border border-hairline rounded-xl hover:border-hairline-strong transition-all group shadow-sm"
+                    style={{padding: '12px 14px', minHeight: '56px'}}
                   >
-                    <span className="block text-[11px] font-semibold uppercase tracking-[0.055em] text-muted mb-1 md:mb-1.5 group-hover:text-primary transition-colors">
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.055em] text-muted mb-1 group-hover:text-primary transition-colors">
                       {chip.label}
                     </span>
-                    <span className="text-[13px] md:text-[14px] text-body line-clamp-2 md:line-clamp-none">"{chip.example}…"</span>
+                    <span className="text-[13px] text-body line-clamp-2">"{chip.example}…"</span>
                   </button>
                 ))}
               </div>
 
-              {/* Hint */}
-              <p className="text-[12px] text-muted-soft font-mono mt-6 text-center">
+              {/* Hint — hidden on small mobile to reduce clutter */}
+              <p className="hidden md:block text-[12px] text-muted-soft font-mono mt-6 text-center">
                 Two Ollama experts plus an arbiter judge. Run the backend on port 5050 — Vite proxies{' '}
                 <code className="text-muted">/api</code> in development.
               </p>
@@ -862,18 +872,25 @@ const App: React.FC = () => {
               </div>
             </main>
 
-            {/* Bottom input bar — pill-shaped, anchored */}
-            <div className="flex-shrink-0 bg-canvas border-t border-hairline px-3 py-3 md:px-4 md:py-4 pb-[max(env(safe-area-inset-bottom,16px),12px)]">
+            {/* Bottom input bar — pill-shaped, anchored, with iOS safe-area */}
+            <div
+              className="flex-shrink-0 bg-canvas border-t border-hairline"
+              style={{
+                padding: '10px 12px',
+                paddingBottom: 'max(env(safe-area-inset-bottom, 12px), 12px)',
+              }}
+            >
               <div className="max-w-3xl mx-auto">
                 {activeSession && activeSession.followUpCount >= 5 ? (
-                  <div className="flex flex-col items-center justify-center py-5 px-5 bg-surface-card border border-hairline rounded-xl text-center shadow-sm">
+                  <div className="flex flex-col items-center justify-center py-5 px-4 bg-surface-card border border-hairline rounded-xl text-center shadow-sm">
                     <span className="text-[15px] md:text-[16px] font-semibold text-ink mb-1.5">Session Limit Reached</span>
-                    <span className="text-[13px] md:text-[14px] text-body mb-4 max-w-sm">
+                    <span className="text-[13px] md:text-[14px] text-body mb-4">
                       To maintain optimal agent performance and context limits, please start a new execution.
                     </span>
                     <button
                       onClick={handleNewChat}
-                      className="px-5 py-2.5 bg-primary hover:bg-primary-active text-on-primary rounded-full text-[14px] font-medium transition-opacity shadow-sm"
+                      className="px-5 py-3 bg-primary hover:bg-primary-active text-on-primary rounded-full text-[14px] font-medium transition-opacity shadow-sm"
+                      style={{minHeight: '44px'}}
                     >
                       Initialize New Chat
                     </button>
@@ -893,12 +910,15 @@ const App: React.FC = () => {
                       rows={1}
                       placeholder="Ask Arbiter…"
                       disabled={isProcessing || !session || showOnboarding || showAuth}
-                      className="w-full pl-4 pr-12 md:pl-5 md:pr-14 py-3 md:py-3.5 bg-surface-card border border-hairline rounded-[28px] text-ink placeholder:text-muted-soft focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/8 disabled:opacity-50 disabled:cursor-not-allowed text-[15px] md:text-[16px] resize-none max-h-40 overflow-y-auto font-sans transition-colors shadow-sm"
+                      className="w-full bg-surface-card border border-hairline rounded-[24px] text-ink placeholder:text-muted-soft focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/8 disabled:opacity-50 disabled:cursor-not-allowed text-[16px] resize-none overflow-y-auto font-sans transition-colors shadow-sm"
+                      style={{paddingLeft: '16px', paddingRight: '52px', paddingTop: '12px', paddingBottom: '12px', maxHeight: '160px', minHeight: '48px'}}
                     />
                     <button
                       type="submit"
                       disabled={!prompt.trim() || isProcessing || !session}
-                      className="absolute right-2 bottom-2 md:right-3 md:bottom-2.5 h-8 w-8 md:h-9 md:w-9 bg-primary hover:bg-primary-active text-on-primary rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+                      aria-label="Send message"
+                      className="absolute right-2 bottom-2 bg-primary hover:bg-primary-active text-on-primary rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+                      style={{width: '40px', height: '40px'}}
                     >
                       {isCurrentSessionProcessing ? (
                         <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -915,7 +935,7 @@ const App: React.FC = () => {
                   </form>
                 )}
 
-                <p className="text-[12px] text-muted-soft font-mono mt-2.5 text-center">
+                <p className="hidden md:block text-[12px] text-muted-soft font-mono mt-2.5 text-center">
                   Two Ollama experts plus an arbiter judge. Run the backend on port 5050 — Vite proxies{' '}
                   <code className="text-muted">/api</code> in development.
                 </p>

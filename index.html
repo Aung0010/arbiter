@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Arbiter | Multi-LLM Orchestration</title>
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script>
@@ -196,6 +197,16 @@
       code, pre, .font-mono {
         font-family: 'JetBrains Mono', ui-monospace, monospace;
         font-size: 13px;
+      }
+
+      /* ── Prevent iOS auto-zoom on textarea/input focus ── */
+      input, textarea, select {
+        font-size: 16px !important;
+      }
+
+      /* ── iOS momentum scrolling ── */
+      .overflow-y-auto {
+        -webkit-overflow-scrolling: touch;
       }
 
       /* ── Custom scrollbar ── */
