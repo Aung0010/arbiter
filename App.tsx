@@ -666,15 +666,20 @@ const App: React.FC = () => {
       />
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Mobile top bar */}
-        <div className="md:hidden bg-canvas-soft border-b border-hairline px-4 py-3.5 flex items-center justify-between z-10 flex-shrink-0">
-          <button onClick={() => setIsSidebarOpen(true)} className="text-muted hover:text-ink transition-colors">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          <span className="text-[16px] font-normal text-ink tracking-[-0.005em]">Arbiter</span>
-          <div className="w-5" />
+        <div className="md:hidden bg-canvas border-b border-hairline px-4 py-3 flex items-center justify-between z-10 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-1 -ml-1 text-muted hover:text-ink transition-colors">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <span className="text-[18px] font-medium text-ink tracking-tight">Arbiter</span>
+          </div>
+          {session && (
+            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase overflow-hidden border border-primary/20">
+              {session.user?.email?.[0] || 'U'}
+            </div>
+          )}
         </div>
 
         {!activeSession ? (
@@ -690,11 +695,11 @@ const App: React.FC = () => {
               </div>
 
               {/* Headline — display-lg style */}
-              <h1 className="text-[36px] font-normal text-ink tracking-[-0.02em] leading-tight mb-3 text-center">
+              <h1 className="text-[28px] md:text-[36px] font-normal text-ink tracking-[-0.02em] leading-tight mb-3 text-center">
                 Arbiter
               </h1>
 
-              <p className="text-[16px] text-body text-center leading-relaxed mb-8 max-w-sm">
+              <p className="text-[15px] md:text-[16px] text-body text-center leading-relaxed mb-6 md:mb-8 max-w-sm px-2">
                 A multi-agent consensus protocol. Logic, creativity, and critical analysis debate to reach the truth.
               </p>
 
@@ -713,12 +718,12 @@ const App: React.FC = () => {
                   rows={1}
                   placeholder="Initialize new protocol execution…"
                   disabled={isProcessing || !session || showOnboarding || showAuth}
-                  className="w-full pl-5 pr-14 py-4 bg-surface-card border border-hairline rounded-[28px] text-ink placeholder:text-muted-soft focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/8 disabled:opacity-50 disabled:cursor-not-allowed text-[16px] resize-none max-h-48 overflow-y-auto font-sans transition-colors"
+                  className="w-full pl-5 pr-14 py-3.5 md:py-4 bg-surface-card border border-hairline rounded-[28px] text-ink placeholder:text-muted-soft focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/8 disabled:opacity-50 disabled:cursor-not-allowed text-[15px] md:text-[16px] resize-none max-h-48 overflow-y-auto font-sans transition-colors shadow-sm"
                 />
                 <button
                   type="submit"
                   disabled={!prompt.trim() || isProcessing || !session}
-                  className="absolute right-3 bottom-3 h-9 w-9 bg-primary hover:bg-primary-active text-on-primary rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="absolute right-2.5 bottom-2.5 md:right-3 md:bottom-3 h-9 w-9 bg-primary hover:bg-primary-active text-on-primary rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
                 >
                   {isCurrentSessionProcessing ? (
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -735,7 +740,7 @@ const App: React.FC = () => {
               </form>
 
               {/* Clickable suggestion chips */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full mt-2">
                 {[
                   { label: 'Evaluate Frameworks', example: 'Compare Python vs Go for a high-throughput backend' },
                   { label: 'Abstract Concepts', example: 'Explain quantum entanglement simply' },
@@ -748,12 +753,12 @@ const App: React.FC = () => {
                       if (session) setPrompt(chip.example);
                       else setShowAuth(true);
                     }}
-                    className="text-left p-4 bg-surface-card border border-hairline rounded-lg hover:border-hairline-strong transition-colors group"
+                    className="text-left p-3.5 md:p-4 bg-surface-card border border-hairline rounded-xl hover:border-hairline-strong transition-all group shadow-sm hover:shadow-md"
                   >
-                    <span className="block text-[11px] font-semibold uppercase tracking-[0.055em] text-muted mb-1.5 group-hover:text-body transition-colors">
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.055em] text-muted mb-1 md:mb-1.5 group-hover:text-primary transition-colors">
                       {chip.label}
                     </span>
-                    <span className="text-[13px] text-body">"{chip.example}…"</span>
+                    <span className="text-[13px] md:text-[14px] text-body line-clamp-2 md:line-clamp-none">"{chip.example}…"</span>
                   </button>
                 ))}
               </div>
@@ -776,7 +781,7 @@ const App: React.FC = () => {
                       {/* User message — right-aligned bubble */}
                       {turn.userMessage && (
                         <div className="flex justify-end mb-6">
-                          <div className="max-w-[78%] bg-surface-card border border-hairline rounded-[20px] px-5 py-3.5 text-[16px] text-ink leading-relaxed whitespace-pre-wrap">
+                          <div className="max-w-[88%] md:max-w-[75%] bg-surface-card border border-hairline rounded-[22px] px-4 py-3 md:px-5 md:py-3.5 text-[15px] md:text-[16px] text-ink leading-relaxed whitespace-pre-wrap shadow-sm">
                             {turn.userMessage.content}
                           </div>
                         </div>
@@ -858,17 +863,17 @@ const App: React.FC = () => {
             </main>
 
             {/* Bottom input bar — pill-shaped, anchored */}
-            <div className="flex-shrink-0 bg-canvas border-t border-hairline px-4 py-4">
+            <div className="flex-shrink-0 bg-canvas border-t border-hairline px-3 py-3 md:px-4 md:py-4 pb-[max(env(safe-area-inset-bottom,16px),12px)]">
               <div className="max-w-3xl mx-auto">
                 {activeSession && activeSession.followUpCount >= 5 ? (
-                  <div className="flex flex-col items-center justify-center py-5 px-5 bg-surface-card border border-hairline rounded-lg text-center">
-                    <span className="text-[16px] font-normal text-ink mb-1.5">Session Limit Reached</span>
-                    <span className="text-[14px] text-body mb-4 max-w-sm">
+                  <div className="flex flex-col items-center justify-center py-5 px-5 bg-surface-card border border-hairline rounded-xl text-center shadow-sm">
+                    <span className="text-[15px] md:text-[16px] font-semibold text-ink mb-1.5">Session Limit Reached</span>
+                    <span className="text-[13px] md:text-[14px] text-body mb-4 max-w-sm">
                       To maintain optimal agent performance and context limits, please start a new execution.
                     </span>
                     <button
                       onClick={handleNewChat}
-                      className="px-5 py-2.5 bg-ink hover:opacity-90 text-on-primary rounded-md text-[14px] font-medium transition-opacity"
+                      className="px-5 py-2.5 bg-primary hover:bg-primary-active text-on-primary rounded-full text-[14px] font-medium transition-opacity shadow-sm"
                     >
                       Initialize New Chat
                     </button>
@@ -886,14 +891,14 @@ const App: React.FC = () => {
                         }
                       }}
                       rows={1}
-                      placeholder="Input secondary query parameters…"
+                      placeholder="Ask Arbiter…"
                       disabled={isProcessing || !session || showOnboarding || showAuth}
-                      className="w-full pl-5 pr-14 py-3.5 bg-surface-card border border-hairline rounded-[28px] text-ink placeholder:text-muted-soft focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/8 disabled:opacity-50 disabled:cursor-not-allowed text-[16px] resize-none max-h-40 overflow-y-auto font-sans transition-colors"
+                      className="w-full pl-4 pr-12 md:pl-5 md:pr-14 py-3 md:py-3.5 bg-surface-card border border-hairline rounded-[28px] text-ink placeholder:text-muted-soft focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/8 disabled:opacity-50 disabled:cursor-not-allowed text-[15px] md:text-[16px] resize-none max-h-40 overflow-y-auto font-sans transition-colors shadow-sm"
                     />
                     <button
                       type="submit"
                       disabled={!prompt.trim() || isProcessing || !session}
-                      className="absolute right-3 bottom-3 h-9 w-9 bg-primary hover:bg-primary-active text-on-primary rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
+                      className="absolute right-2 bottom-2 md:right-3 md:bottom-2.5 h-8 w-8 md:h-9 md:w-9 bg-primary hover:bg-primary-active text-on-primary rounded-pill transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
                     >
                       {isCurrentSessionProcessing ? (
                         <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">

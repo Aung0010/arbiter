@@ -176,7 +176,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* ── SIDEBAR PANEL ── */}
       <div
         className={`
-          fixed inset-y-0 left-0 z-30 w-64 flex flex-col
+          fixed inset-y-0 left-0 z-30 flex flex-col
+          w-[85vw] max-w-[320px] md:w-72
           bg-canvas-soft border-r border-hairline
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
