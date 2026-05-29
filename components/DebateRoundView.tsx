@@ -8,15 +8,15 @@ interface DebateRoundViewProps {
   isLatest: boolean;
 }
 
-// Timeline pastel round number badges — AI-action signature
-// Round 1 → Thinking peach · Round 2 → Grep mint · Round 3 → Read blue · 4+ → Edit lavender
+// Round number badges — AI-action signature
+// Round 1 → Primary subdued lavender · Round 2 → Sky blue · Round 3 → Magenta tint · 4+ → Brand dark
 const getRoundBadgeStyle = (roundNumber: number) => {
   const map: Record<number, string> = {
-    1: 'bg-timeline-thinking text-ink',
-    2: 'bg-timeline-grep text-ink',
-    3: 'bg-timeline-read text-ink',
+    1: 'bg-primary-subdued text-ink',
+    2: 'bg-timeline-read text-ink',
+    3: 'bg-timeline-edit text-ink',
   };
-  return map[roundNumber] ?? 'bg-timeline-edit text-ink';
+  return map[roundNumber] ?? 'bg-brand-dark text-on-primary';
 };
 
 const DebateRoundView: React.FC<DebateRoundViewProps> = ({ round, isLatest }) => {

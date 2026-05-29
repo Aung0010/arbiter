@@ -13,8 +13,8 @@ const steps = [
     visual: (
       <div className="flex items-center justify-center gap-4 py-6">
         {[
-          { label: 'Expert A', bg: '#9fc9a2', text: '#26251e', icon: '⬡' },
-          { label: 'Expert B', bg: '#9fbbe0', text: '#26251e', icon: '⚡' },
+          { label: 'Expert A', bg: '#b9b9f9', text: '#0d253d', icon: '⬡' },
+          { label: 'Expert B', bg: '#9fbbe0', text: '#0d253d', icon: '⚡' },
         ].map((m) => (
           <div key={m.label} className="flex flex-col items-center gap-2">
             <div
@@ -32,7 +32,7 @@ const steps = [
         <div className="flex flex-col items-center gap-2">
           <div
             className="w-14 h-14 rounded-lg flex items-center justify-center text-2xl"
-            style={{ background: '#c0853233', border: '1px solid #c08532' }}
+            style={{ background: '#1c1e5433', border: '1px solid #1c1e54' }}
           >
             ⚖️
           </div>
@@ -73,9 +73,9 @@ const steps = [
     visual: (
       <div className="flex flex-col gap-2.5 py-4">
         {[
-          { name: 'Gemma 3', role: 'Expert A · Logical analysis', bg: '#9fc9a2', icon: '⬡' },
+          { name: 'Gemma 3', role: 'Expert A · Logical analysis', bg: '#b9b9f9', icon: '⬡' },
           { name: 'Mistral', role: 'Expert B · Critical reasoning', bg: '#9fbbe0', icon: '⚡' },
-          { name: 'Qwen 2.5 / GPT-OSS', role: 'Judge · Final arbitration', bg: '#c08532', icon: '⚖️' },
+          { name: 'Qwen 2.5 / GPT-OSS', role: 'Judge · Final arbitration', bg: '#1c1e54', icon: '⚖️' },
         ].map((m) => (
           <div key={m.name} className="flex items-center gap-3 bg-canvas border border-hairline rounded-md px-4 py-3">
             <div

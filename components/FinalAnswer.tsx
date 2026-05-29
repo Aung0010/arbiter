@@ -30,8 +30,8 @@ const FinalAnswer: React.FC<FinalAnswerProps> = ({ consensus, onRegenerate }) =>
             </h2>
           </div>
 
-          {/* Status badge — timeline-done gold pill */}
-          <span className="inline-flex items-center gap-1.5 bg-timeline-done text-on-primary text-[11px] font-semibold uppercase tracking-[0.055em] rounded-pill px-3 py-1">
+          {/* Status badge — brand dark navy pill */}
+          <span className="inline-flex items-center gap-1.5 bg-brand-dark text-on-primary text-[11px] font-semibold uppercase tracking-[0.055em] rounded-pill px-3 py-1">
             <span>●</span>
             {consensus.participantSummary ??
               `${consensus.participatingAgents.length} Models Verified`}

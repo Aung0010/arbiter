@@ -835,15 +835,15 @@ const App: React.FC = () => {
                   <div className="flex items-center gap-3 py-3 pl-1">
                     <div className="flex items-end gap-1.5">
                       <div
-                        className="w-2.5 h-2.5 rounded-pill bg-timeline-thinking animate-typing-dot"
+                        className="w-2.5 h-2.5 rounded-pill bg-primary-subdued animate-typing-dot"
                         style={{ animationDelay: '0ms' }}
                       />
                       <div
-                        className="w-2.5 h-2.5 rounded-pill bg-timeline-grep animate-typing-dot"
+                        className="w-2.5 h-2.5 rounded-pill bg-timeline-read animate-typing-dot"
                         style={{ animationDelay: '200ms' }}
                       />
                       <div
-                        className="w-2.5 h-2.5 rounded-pill bg-timeline-read animate-typing-dot"
+                        className="w-2.5 h-2.5 rounded-pill bg-timeline-edit animate-typing-dot"
                         style={{ animationDelay: '400ms' }}
                       />
                     </div>

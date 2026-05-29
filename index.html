@@ -11,16 +11,35 @@
           extend: {
             colors: {
               /* ── Brand ── */
-              primary:    { DEFAULT: 'var(--c-primary)',        active: 'var(--c-primary-active)' },
+              primary:    {
+                DEFAULT: 'var(--c-primary)',
+                deep:    'var(--c-primary-deep)',
+                press:   'var(--c-primary-press)',
+                soft:    'var(--c-primary-soft)',
+                subdued: 'var(--c-primary-bg-subdued-hover)',
+                active:  'var(--c-primary-deep)',
+              },
+              brand: {
+                dark: 'var(--c-brand-dark-900)',
+              },
               /* ── Surface ── */
-              canvas:     { DEFAULT: 'var(--c-canvas)',         soft: 'var(--c-canvas-soft)' },
-              surface:    { card: 'var(--c-surface-card)',      strong: 'var(--c-surface-strong)' },
+              canvas:     {
+                DEFAULT: 'var(--c-canvas)',
+                soft:    'var(--c-canvas-soft)',
+                cream:   'var(--c-canvas-cream)',
+              },
+              surface:    { card: 'var(--c-surface-card)', strong: 'var(--c-surface-strong)' },
               /* ── Hairlines ── */
-              hairline:   { DEFAULT: 'var(--c-hairline)',       soft: 'var(--c-hairline-soft)', strong: 'var(--c-hairline-strong)' },
+              hairline:   {
+                DEFAULT: 'var(--c-hairline)',
+                soft:    'var(--c-hairline-soft)',
+                strong:  'var(--c-hairline-strong)',
+                input:   'var(--c-hairline-input)',
+              },
               /* ── Text ── */
               ink:        'var(--c-ink)',
-              body:       { DEFAULT: 'var(--c-body)',           strong: 'var(--c-body-strong)' },
-              muted:      { DEFAULT: 'var(--c-muted)',          soft: 'var(--c-muted-soft)' },
+              body:       { DEFAULT: 'var(--c-body)', strong: 'var(--c-body-strong)' },
+              muted:      { DEFAULT: 'var(--c-muted)', soft: 'var(--c-muted-soft)' },
               'on-primary': 'var(--c-on-primary)',
               /* ── Timeline (AI-action pastels) ── */
               timeline:   {
@@ -30,8 +49,11 @@
                 edit:     'var(--c-timeline-edit)',
                 done:     'var(--c-timeline-done)',
               },
-              /* ── Semantic ── */
-              semantic:   { success: 'var(--c-semantic-success)', error: 'var(--c-semantic-error)' },
+              /* ── Accent / Semantic ── */
+              ruby:     'var(--c-ruby)',
+              magenta:  'var(--c-magenta)',
+              lemon:    'var(--c-lemon)',
+              semantic: { success: 'var(--c-semantic-success)', error: 'var(--c-semantic-error)' },
             },
             fontFamily: {
               sans: ['Inter', 'system-ui', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
@@ -61,76 +83,100 @@
 
       /* ── Light Mode Tokens ── */
       :root {
-        /* Brand */
-        --c-primary:              #f54e00;
-        --c-primary-active:       #d04200;
+        /* Brand — Purple */
+        --c-primary:                    #533afd;
+        --c-primary-deep:               #4434d4;
+        --c-primary-press:              #2e2b8c;
+        --c-primary-soft:               #665efd;
+        --c-primary-bg-subdued-hover:   #b9b9f9;
+        --c-brand-dark-900:             #1c1e54;
+        --c-primary-active:             #4434d4;
 
-        /* Surface */
-        --c-canvas:               #f7f7f4;
-        --c-canvas-soft:          #fafaf7;
-        --c-surface-card:         #ffffff;
-        --c-surface-strong:       #e6e5e0;
+        /* Surface — Cool white */
+        --c-canvas:                     #ffffff;
+        --c-canvas-soft:                #f6f9fc;
+        --c-canvas-cream:               #f5e9d4;
+        --c-surface-card:               #ffffff;
+        --c-surface-strong:             #eef2f7;
 
-        /* Hairlines */
-        --c-hairline:             #e6e5e0;
-        --c-hairline-soft:        #efeee8;
-        --c-hairline-strong:      #cfcdc4;
+        /* Hairlines — Cool blue-gray */
+        --c-hairline:                   #e3e8ee;
+        --c-hairline-soft:              #eef2f7;
+        --c-hairline-strong:            #c8d3de;
+        --c-hairline-input:             #a8c3de;
 
-        /* Text */
-        --c-ink:                  #26251e;
-        --c-body:                 #5a5852;
-        --c-body-strong:          #26251e;
-        --c-muted:                #807d72;
-        --c-muted-soft:           #a09c92;
-        --c-on-primary:           #ffffff;
+        /* Text — Deep navy */
+        --c-ink:                        #0d253d;
+        --c-body:                       #273951;
+        --c-body-strong:                #0d253d;
+        --c-muted:                      #64748d;
+        --c-muted-soft:                 #8fa3be;
+        --c-on-primary:                 #ffffff;
 
-        /* Timeline pastels — AI-action signature */
-        --c-timeline-thinking:    #dfa88f;
-        --c-timeline-grep:        #9fc9a2;
-        --c-timeline-read:        #9fbbe0;
-        --c-timeline-edit:        #c0a8dd;
-        --c-timeline-done:        #c08532;
+        /* Timeline pastels — AI-action signature (purple-brand palette) */
+        --c-timeline-thinking:          #f5e9d4;  /* canvas-cream peach */
+        --c-timeline-grep:              #b9b9f9;  /* primary-bg-subdued-hover lavender */
+        --c-timeline-read:              #9fbbe0;  /* cool sky blue */
+        --c-timeline-edit:              #f3c6ee;  /* soft magenta tint */
+        --c-timeline-done:              #d4b483;  /* warm gold / lemon-light */
+
+        /* Accents */
+        --c-ruby:                       #ea2261;
+        --c-magenta:                    #f96bee;
+        --c-lemon:                      #9b6829;
 
         /* Semantic */
-        --c-semantic-success:     #1f8a65;
-        --c-semantic-error:       #cf2d56;
+        --c-semantic-success:           #1a7a50;
+        --c-semantic-error:             #ea2261;  /* ruby */
       }
 
-      /* ── Dark Mode Tokens (warm dark) ── */
+      /* ── Dark Mode Tokens (deep navy dark) ── */
       html.dark {
-        /* Brand stays the same */
-        --c-primary:              #f54e00;
-        --c-primary-active:       #d04200;
+        /* Brand stays purple */
+        --c-primary:                    #665efd;
+        --c-primary-deep:               #533afd;
+        --c-primary-press:              #4434d4;
+        --c-primary-soft:               #7b74fd;
+        --c-primary-bg-subdued-hover:   #2e2b8c;
+        --c-brand-dark-900:             #1c1e54;
+        --c-primary-active:             #533afd;
 
-        /* Surface → warm dark */
-        --c-canvas:               #1a1916;
-        --c-canvas-soft:          #1f1e1b;
-        --c-surface-card:         #222119;
-        --c-surface-strong:       #2e2d27;
+        /* Surface — deep navy */
+        --c-canvas:                     #0d1929;
+        --c-canvas-soft:                #111e30;
+        --c-canvas-cream:               #1e1a0f;
+        --c-surface-card:               #162035;
+        --c-surface-strong:             #1d2840;
 
-        /* Hairlines → warm dark */
-        --c-hairline:             #2e2d27;
-        --c-hairline-soft:        #282720;
-        --c-hairline-strong:      #3a3932;
+        /* Hairlines — dark navy dividers */
+        --c-hairline:                   #1e2e44;
+        --c-hairline-soft:              #172539;
+        --c-hairline-strong:            #2a3d56;
+        --c-hairline-input:             #2a4060;
 
-        /* Text → warm inverted */
-        --c-ink:                  #f0efe8;
-        --c-body:                 #a09c92;
-        --c-body-strong:          #f0efe8;
-        --c-muted:                #6e6b61;
-        --c-muted-soft:           #4f4d46;
-        --c-on-primary:           #ffffff;
+        /* Text — light on dark navy */
+        --c-ink:                        #e8eef6;
+        --c-body:                       #9bb3cc;
+        --c-body-strong:                #e8eef6;
+        --c-muted:                      #5d7a99;
+        --c-muted-soft:                 #3a506a;
+        --c-on-primary:                 #ffffff;
 
-        /* Timeline pastels are slightly muted in dark mode */
-        --c-timeline-thinking:    #c49278;
-        --c-timeline-grep:        #85ac88;
-        --c-timeline-read:        #85a3c8;
-        --c-timeline-edit:        #a490c4;
-        --c-timeline-done:        #a87228;
+        /* Timeline pastels — muted for dark */
+        --c-timeline-thinking:          #3a2e1a;
+        --c-timeline-grep:              #2e2b8c;
+        --c-timeline-read:              #1a3050;
+        --c-timeline-edit:              #3a1a38;
+        --c-timeline-done:              #3a2e10;
+
+        /* Accents */
+        --c-ruby:                       #f04d7f;
+        --c-magenta:                    #fa88f2;
+        --c-lemon:                      #c49040;
 
         /* Semantic */
-        --c-semantic-success:     #2aaf80;
-        --c-semantic-error:       #e5476a;
+        --c-semantic-success:           #2aaf80;
+        --c-semantic-error:             #f04d7f;
       }
 
       /* ── Base ── */

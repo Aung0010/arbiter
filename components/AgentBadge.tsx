@@ -8,11 +8,13 @@ interface AgentBadgeProps {
 
 const AgentBadge: React.FC<AgentBadgeProps> = ({ role, size = 'md' }) => {
   // Timeline pastel pill palette — AI-action signature
-  // Expert A (Gemma) → Grep mint   · Expert B (Mistral) → Read blue   · Judge → Done gold
+  // Expert A (Gemma) → Primary subdued lavender  · Expert B (Mistral) → Sky blue  · Judge → Brand dark
   const styles: Record<AgentRole, string> = {
-    [AgentRole.MODEL_A]: 'bg-timeline-grep text-ink',
+    [AgentRole.MODEL_A]: 'bg-primary-subdued text-ink',
     [AgentRole.MODEL_B]: 'bg-timeline-read text-ink',
-    [AgentRole.MODEL_C]: 'bg-timeline-done text-on-primary',
+    [AgentRole.MODEL_C]: 'bg-brand-dark text-on-primary',
+    [AgentRole.USER]:   'bg-canvas-soft text-body',
+    [AgentRole.SYSTEM]: 'bg-canvas-soft text-muted',
   };
 
   // Human-readable labels; these match the model names set in the backend env
@@ -20,6 +22,8 @@ const AgentBadge: React.FC<AgentBadgeProps> = ({ role, size = 'md' }) => {
     [AgentRole.MODEL_A]: 'Expert A · Gemma 3',
     [AgentRole.MODEL_B]: 'Expert B · Mistral',
     [AgentRole.MODEL_C]: 'Arbiter · Judge',
+    [AgentRole.USER]: 'User',
+    [AgentRole.SYSTEM]: 'System',
   };
 
   const icons: Record<AgentRole, React.ReactNode> = {
