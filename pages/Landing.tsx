@@ -356,7 +356,7 @@ const Landing: React.FC = () => {
               <td>68.9%</td>
               <td>
                 <div className="accuracy-bar-wrap">
-                  <div className="accuracy-bar-bg"><div className="accuracy-bar-fill bar-emerald" style="width: 68.9%"></div></div>
+                  <div className="accuracy-bar-bg"><div className="accuracy-bar-fill bar-emerald" style={{ width: '68.9%' }}></div></div>
                   <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>68.9%</span>
                 </div>
               </td>
@@ -367,7 +367,7 @@ const Landing: React.FC = () => {
               <td>76.3%</td>
               <td>
                 <div className="accuracy-bar-wrap">
-                  <div className="accuracy-bar-bg"><div className="accuracy-bar-fill bar-primary" style="width: 76.3%"></div></div>
+                  <div className="accuracy-bar-bg"><div className="accuracy-bar-fill bar-primary" style={{ width: '76.3%' }}></div></div>
                   <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>76.3%</span>
                 </div>
               </td>
@@ -378,7 +378,7 @@ const Landing: React.FC = () => {
               <td>73.1%</td>
               <td>
                 <div className="accuracy-bar-wrap">
-                  <div className="accuracy-bar-bg"><div className="accuracy-bar-fill bar-sapphire" style="width: 73.1%"></div></div>
+                  <div className="accuracy-bar-bg"><div className="accuracy-bar-fill bar-sapphire" style={{ width: '73.1%' }}></div></div>
                   <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>73.1%</span>
                 </div>
               </td>
@@ -389,7 +389,7 @@ const Landing: React.FC = () => {
               <td>79.3%</td>
               <td>
                 <div className="accuracy-bar-wrap">
-                  <div className="accuracy-bar-bg"><div className="accuracy-bar-fill bar-highlight" style="width: 79.3%"></div></div>
+                  <div className="accuracy-bar-bg"><div className="accuracy-bar-fill bar-highlight" style={{ width: '79.3%' }}></div></div>
                   <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', whiteSpace: 'nowrap' }}>79.3%</span>
                 </div>
               </td>
